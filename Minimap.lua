@@ -4,21 +4,8 @@
 local _, AS = ...
 local btn
 
-local TALENT_ATLASES = { "UI-HUD-MicroMenu-SpecTalents-Up", "UI-HUD-MicroMenu-Talents-Up" }
-
--- The game's Talents icon (the one on the Talents micro-menu button).
-function AS.SetTalentIcon(tex)
-    if C_Texture and C_Texture.GetAtlasInfo then
-        for _, atlas in ipairs(TALENT_ATLASES) do
-            if C_Texture.GetAtlasInfo(atlas) then
-                tex:SetAtlas(atlas)
-                return
-            end
-        end
-    end
-    tex:SetTexture("Interface\\Buttons\\UI-MicroButton-Talents-Up")
-    tex:SetTexCoord(0.17, 0.83, 0.48, 0.93)
-end
+-- The addon's own icon (Media\\icon.tga): a gold talent slot.
+AS.ICON = "Interface\\AddOns\\" .. AS.name .. "\\Media\\icon"
 
 local function Settings()
     AS.db.minimap = AS.db.minimap or { angle = 200, hide = false }
@@ -83,9 +70,9 @@ local function Create()
     bg:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
 
     btn.icon = btn:CreateTexture(nil, "ARTWORK")
-    btn.icon:SetSize(20, 20)
+    btn.icon:SetSize(21, 21)
     btn.icon:SetPoint("TOPLEFT", 6, -5)
-    AS.SetTalentIcon(btn.icon)
+    btn.icon:SetTexture(AS.ICON)
 
     local border = btn:CreateTexture(nil, "OVERLAY")
     border:SetSize(53, 53)

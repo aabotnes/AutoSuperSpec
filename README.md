@@ -1,3 +1,5 @@
+<p align="center"><img src=".github/logo.png" width="200" alt="Auto Super Spec logo"></p>
+
 # Auto Super Spec
 
 *by [Soeta's]*
