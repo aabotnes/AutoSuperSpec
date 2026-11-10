@@ -2,7 +2,7 @@
 
 # Auto Super Spec
 
-*by [Soeta's]*
+*by Soeta*
 
 Import talent builds from Wowhead, pick the one you're leveling, and Auto Super Spec learns its talents in order every time you ding. It's made for WoW: Forever (interface 16001) and also works on classic-style clients.
 
