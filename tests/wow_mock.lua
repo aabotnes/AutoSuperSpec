@@ -29,6 +29,7 @@ function Widget.CreateFontString() return NewWidget() end
 function Widget.CreateTexture() return NewWidget() end
 function Widget.Insert(self, t) self._text = self._text .. t end
 function Widget.GetStringWidth() return 80 end
+function Widget.SetColorTexture(self, r, g, b, a) self._color = ("%.2f,%.2f,%.2f,%.2f"):format(r, g, b, a or 1) end
 function Widget.GetHeight() return 300 end
 function Widget.GetWidth() return 140 end
 function Widget.GetCenter() return 0, 0 end

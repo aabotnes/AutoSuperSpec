@@ -326,14 +326,20 @@ local function CreateOrderRow(parent)
     r.bg:SetAllPoints()
     r.level = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     r.level:SetPoint("LEFT", 6, 0)
-    r.level:SetWidth(42)
+    r.level:SetWidth(48)
     r.level:SetJustifyH("LEFT")
+    r.level:SetWordWrap(false)
     r.icon = r:CreateTexture(nil, "ARTWORK")
     r.icon:SetSize(16, 16)
-    r.icon:SetPoint("LEFT", 50, 0)
+    r.icon:SetPoint("LEFT", 56, 0)
+    r.rank = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    r.rank:SetPoint("RIGHT", -8, 0)
+    r.rank:SetWidth(30)
+    r.rank:SetJustifyH("RIGHT")
+    r.rank:SetWordWrap(false)
     r.text = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     r.text:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
-    r.text:SetPoint("RIGHT", -6, 0)
+    r.text:SetPoint("RIGHT", r.rank, "LEFT", -4, 0)
     r.text:SetJustifyH("LEFT")
     r.text:SetWordWrap(false)
     r:SetScript("OnClick", function(self) if self.key then RemovePoint(self.key, self.index) end end)
@@ -658,22 +664,26 @@ local function DrawOrder(steps, raw)
             if raw then
                 r.key, r.index, r.talent = nil, nil, nil
                 r.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-                r.text:SetText(("Tree %d, talent %s%s"):format(t.tree or 0, AS.POS:sub(t.pos, t.pos), t.maxed and " (max)" or ""))
+                r.text:SetText(("Tree %d, talent %s"):format(t.tree or 0, AS.POS:sub(t.pos, t.pos)))
+                r.rank:SetText(t.maxed and "max" or "")
                 r.text:SetTextColor(0.8, 0.8, 0.8)
+                r.rank:SetTextColor(0.8, 0.8, 0.8)
             else
                 r.key, r.index, r.talent = t.key, idx, t
                 U.SetIcon(r.icon, t.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
                 local n = 0
                 for k = 1, idx do if steps[k].key == t.key then n = n + 1 end end
                 r.pointRank = n
-                r.text:SetText(("%s  %d/%d"):format(t.name, n, t.maxRank))
+                r.text:SetText(t.name)
+                r.rank:SetText(("%d/%d"):format(n, t.maxRank))
+                local cr, cg, cb = 1, 1, 1
                 if have[idx] then
-                    r.text:SetTextColor(0.35, 1, 0.35)
+                    cr, cg, cb = 0.35, 1, 0.35 -- already learned
                 elseif idx == nextIndex and active then
-                    r.text:SetTextColor(1, 0.82, 0)
-                else
-                    r.text:SetTextColor(1, 1, 1)
+                    cr, cg, cb = 1, 0.82, 0 -- next point
                 end
+                r.text:SetTextColor(cr, cg, cb)
+                r.rank:SetTextColor(cr, cg, cb)
             end
             if idx == nextIndex and active then
                 r.baseR, r.baseG, r.baseB, r.baseA = 1, 0.82, 0, 0.18
@@ -709,7 +719,11 @@ function AS.RefreshCalculatorHighlight()
     end
     for _, r in ipairs(calc.order.rows) do
         if r:IsShown() and r.baseR then
-            r.bg:SetColorTexture(r.baseR, r.baseG, r.baseB, (r.key and r.key == calc.hoverKey) and 0.3 or r.baseA)
+            if r.key and r.key == calc.hoverKey then
+                r.bg:SetColorTexture(0.35, 0.6, 1, 0.25) -- same talent as the one under the mouse
+            else
+                r.bg:SetColorTexture(r.baseR, r.baseG, r.baseB, r.baseA)
+            end
         end
     end
 end

@@ -49,7 +49,7 @@ Click a build, or **New build**, to open it in the talent calculator. It opens i
 **Reading the learning order (right)**
 - One row per talent point, with the level you get it at: the first point at level 10, then one per level.
 - **Green** rows are points you've already learned. The **gold** highlighted row is the next point this character will learn (here *Improved Revenge 3/3* at level 17). White rows are still to come.
-- Hover a row to highlight its talent in the tree and see its full tooltip at the rank that point gives you. Scroll with the mouse wheel.
+- Hover a row (or a talent in the tree) and every point of that talent turns **blue** in the list, with the talent highlighted in the tree. You also see its full tooltip at the rank that point gives you. Scroll with the mouse wheel.
 
 **Editing**
 - Left-click a talent to add a point, right-click to remove one. The order you add points in becomes the learning order. Right-click a row in the order list to remove that exact point.

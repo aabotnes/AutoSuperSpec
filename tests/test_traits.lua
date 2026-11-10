@@ -290,7 +290,11 @@ local row = C.order.rows[2]
 row:GetScript("OnEnter")(row)
 tip = table.concat(M.tipLines, "|")
 check(tip:find("Rank 2/5", 1, true) and tip:find("Anticipation rank 2 full text", 1, true) and tip:find("Right-click to remove this point", 1, true), "learning-order rows show the talent at that point's rank: " .. tip)
-check(C.order.rows[1].level:GetText() == "Lvl 10" and C.order.rows[1].text:GetText():find("Anticipation  1/5"), "order list row 1")
+check(C.order.rows[1].level:GetText() == "Lvl 10" and C.order.rows[1].text:GetText() == "Anticipation" and C.order.rows[1].rank:GetText() == "1/5", "order list row 1")
+C.order.rows[2]:GetScript("OnEnter")(C.order.rows[2])
+local c1, c2, c6 = C.order.rows[1].bg._color, C.order.rows[2].bg._color, C.order.rows[6].bg._color
+check(c1 == c2 and c1 ~= c6, "hovering highlights every point of that talent in the same color (" .. tostring(c1) .. " vs " .. tostring(c6) .. ")")
+C.order.rows[2]:GetScript("OnLeave")(C.order.rows[2])
 check(#C.trees[3].lines > 0 and C.trees[3].lines[1]:IsShown(), "prerequisite arrow drawn")
 -- edit: can't break the prerequisite
 local cb = btn(3, "Concussion Blow")
