@@ -1,0 +1,13 @@
+## Interface: 16001
+## Title: Auto Super Spec
+## Notes: |cffc27dff[Soeta's]|r Import talent builds from Wowhead links and learn them automatically, in order, as you level. /ass
+## Version: 4.1.1
+## SavedVariables: AutoSuperSpecDB
+## SavedVariablesPerCharacter: AutoSuperSpecCharDB
+
+Core.lua
+Talents.lua
+Engine.lua
+UI.lua
+Calculator.lua
+Minimap.lua

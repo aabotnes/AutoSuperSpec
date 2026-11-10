@@ -1,0 +1,4 @@
+package-as: AutoSuperSpec
+
+ignore:
+  - tests
