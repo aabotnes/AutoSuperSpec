@@ -26,11 +26,11 @@ This is the page you see when you open Auto Super Spec. In the screenshot, a War
 - **New build (top right).** Make a build from scratch in the talent calculator.
 - **Your builds (middle).** Each build shows its points per tree (here *Arms 4 · Fury 15 · Protection 32*) and its total.
   - **Click a build** to open it in the talent calculator. **Shift-click** it to link it in the chat message you're typing.
-  - **Activate / Deactivate** sets the build this character levels with. Only one is active at a time; the active build is highlighted in green with how many of its points you've learned.
+  - **Activate / Deactivate** sets the build this character levels with. Only one is active at a time; the active build is highlighted in green with how many of its points you've learned. Activating doesn't spend any points by itself. Use **Spec now** for that.
   - **Spec now** spends your free points on the build right away. If your current talents don't match the build, it offers to reset them and spec from scratch, when the game allows it. Otherwise reset at your class trainer first.
   - **...** (or right-click) opens **View / edit talents**, **Share...**, **Rename** and **Delete**.
 - **Following (bottom).** The build this character follows, a progress bar, and the next talent it will learn (here *Improved Revenge 3/3*). Two options:
-  - **Learn on level up**: learn the next talents automatically when you ding.
+  - **Learn on level up**: learn the build's next talent automatically when you ding.
   - **Ask first**: show a popup with a **Learn** button instead of learning right away.
 
 ## Talent calculator
@@ -72,6 +72,15 @@ The talent data comes straight from the game, so it always matches your client. 
 - Saved trees are tagged with the game version and read again after a game update. The scan box shows when the last scan ran and which game version it read, e.g. *Scanned 10 Nov 2026, 19:52 · Game 1.60.1 (70862)*.
 - A class with no saved tree yet still shows its builds' learning order, plus a note to log in that class once.
 - **Scan talent trees** (bottom of the class list) shows how many classes have a saved tree. While any are missing, the box turns amber, lists the missing classes, and offers a big **Scan talent trees** button. Once every class is saved, it becomes a **Rescan** button, so you can scan again any time. Classes without a saved tree have a dimmed icon, and the calculator shows the same scan button when you open a build whose tree is missing. `/ass scan` does the same from chat.
+
+## When does it learn talents by itself?
+
+**Only when you ding, and only the point that ding gave you.**
+
+- Logging in, zoning, activating a build, switching to your other spec, or unlearning talents never spends points automatically. Unspent points from a second spec or a talent reset are yours to place, either by hand or with **Spec now**.
+- If you ding in combat, the point is learned when combat ends.
+- When you ding the max level (60), the last point is learned. Then the build is deactivated and auto spec turns off for that character. Activate a build again any time if you want it back.
+- **Spec now**, the **Learn** popup (with *Ask first*), **Resume** and `/ass learn` are the only other ways it spends points, and they're all things you click.
 
 ## Account-wide builds, per-character activation
 

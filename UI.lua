@@ -635,16 +635,12 @@ local function CreateUI()
     ui.nextIcon:SetPoint("TOPLEFT", 12, -49)
     ui.nextText = Text(foot, "GameFontHighlightSmall")
     ui.nextText:SetPoint("LEFT", ui.nextIcon, "RIGHT", 6, 0)
-    ui.resume = Button(foot, "Resume", 80, 22, function()
-        AS.state.paused = false
-        AS.TryLearn(true)
-        AS.RefreshUI()
-    end)
+    ui.resume = Button(foot, "Resume", 80, 22, function() AS.Resume() end)
     ui.resume:SetPoint("LEFT", ui.bar, "RIGHT", 12, 0)
 
     ui.autoCheck = Check(foot, "Learn on level up", "Learn the next talents of the active build automatically when you ding.", function(self)
         AS.char.enabled = self:GetChecked() and true or false
-        if AS.char.enabled then AS.state.paused = false; AS.TryLearn() end
+        if AS.char.enabled then AS.state.paused = false end
         AS.RefreshUI()
     end)
     ui.autoCheck:SetPoint("TOPRIGHT", -130, -12)

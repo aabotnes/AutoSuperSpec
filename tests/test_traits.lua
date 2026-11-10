@@ -201,19 +201,48 @@ check(spentNow() == 22 and commits == 2, "level 31 learns the next point (" .. s
 M.level = 32
 staged[layout[1][1].nodeID] = 1
 local before = commits
+M.Fire("PLAYER_LEVEL_UP", 32)
 M.Fire("TRAIT_TREE_CURRENCY_INFO_UPDATED", 500)
 M.Advance(5)
 check(commits == before, "doesn't commit the player's own staged changes")
 staged[layout[1][1].nodeID] = 0
 M.Fire("TRAIT_CONFIG_UPDATED", 1)
 M.Advance(5)
-check(commits == before + 1 and spentNow() == 23, "learns once the talent window is clean again")
+check(commits == before + 1 and spentNow() == 23, "learns the ding's point once the talent window is clean again")
 
--- level to 60 in one go (e.g. addon was off): learns everything in one commit
-M.level = 60
+-- unspent points that didn't come from a ding (second spec, talent reset, login) are never auto-spent
+M.level = 40 -- 8 extra unspent points
+M.Fire("TRAIT_TREE_CURRENCY_INFO_UPDATED", 500)
+M.Fire("TRAIT_CONFIG_UPDATED", 1)
+M.Fire("CHARACTER_POINTS_CHANGED", 8)
+M.Fire("PLAYER_ENTERING_WORLD")
+M.Advance(10)
+check(spentNow() == 23 and commits == before + 1, "spec switch / unlearned talents / login: nothing is auto-learned")
+AS.SetActive(nil, true)
+AS.SetActive(b.id, true)
+M.Advance(5)
+check(spentNow() == 23, "activating a build doesn't spend points")
+-- a ding spends only its own point, not the extra unspent ones
+M.level = 41
+M.Fire("PLAYER_LEVEL_UP", 41)
 M.Fire("TRAIT_TREE_CURRENCY_INFO_UPDATED", 500)
 M.Advance(5)
-check(spentNow() == 51, "all 51 points learned, got " .. spentNow())
+check(spentNow() == 24 and commits == before + 2, "a ding learns exactly one point (" .. spentNow() .. ")")
+-- "Spec now" spends the rest when asked
+M.level = 59
+AS.SpecNow(b.id)
+check(M.LastPopup().which == "AUTOSUPERSPEC_APPLY", "spec now asks first")
+M.ClickPopup("AUTOSUPERSPEC_APPLY")
+M.Advance(5)
+check(spentNow() == 50, "spec now fills the free points (" .. spentNow() .. ")")
+
+-- dinging 60: learns the last point, then stops following the build
+M.level = 60
+M.Fire("PLAYER_LEVEL_UP", 60)
+M.Fire("TRAIT_TREE_CURRENCY_INFO_UPDATED", 500)
+M.Advance(5)
+check(spentNow() == 51, "level 60 ding learns the last point, got " .. spentNow())
+check(AS.char.active == nil and M.LogHas("reached level 60"), "at level 60 the build is deactivated (auto spec off)")
 local prog = AS.Progress(b)
 check(prog.done == 51 and not prog.next, "build complete")
 check(committed[layout[2][2].nodeID] == 5 and committed[layout[1][2].nodeID] == 4, "fury cruelty 5, arms deflection 4")

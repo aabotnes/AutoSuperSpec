@@ -5,7 +5,10 @@ local ADDON_NAME, AS = ...
 local T = AS.Talents
 local Print = AS.Print
 
-local state = { busy = false, paused = false, waitCombat = false, scheduled = false }
+-- dingPoints: talent points earned by level-ups that haven't been learned yet.
+-- Automatic learning only ever spends these; other unspent points (a second
+-- spec, a talent reset) are left alone.
+local state = { busy = false, paused = false, waitCombat = false, scheduled = false, dingPoints = 0 }
 AS.state = state
 
 ------------------------------------------------------------------------------
@@ -81,10 +84,26 @@ local function ReportBatch(todo, count, fromZero)
     Print("learned " .. table.concat(parts, ", "))
 end
 
+local function MaxLevel() return AS.MaxPoints() + 9 end
+
+-- At max level the build is done: stop following it on this character.
+local function FinishAtMaxLevel()
+    state.finalDing = false
+    local b = AS.ActiveBuild()
+    if not b then return end
+    AS.char.active = nil
+    Print(("you reached level %d - stopped following |cffffd100%s|r, auto spec is off for this character."):format(MaxLevel(), b.name))
+    AS.RefreshUI()
+end
+
 -- manual: the player asked (button, popup or command) rather than an event.
 -- opts.reset: reset the talent tree first and learn the build from scratch.
+-- opts.ding: only spend points earned by level-ups (the "Learn" popup).
+-- Without manual, only points earned by level-ups are ever spent.
 function AS.TryLearn(manual, opts)
     opts = opts or {}
+    local dingOnly = not manual or opts.ding
+    if dingOnly and state.dingPoints <= 0 then return end
     if state.busy or T.IsWaiting() then return end
     local build = AS.ActiveBuild()
     if not build then return end
@@ -106,17 +125,30 @@ function AS.TryLearn(manual, opts)
         return
     end
     local unspent = T.Unspent()
+    if dingOnly and unspent then
+        state.dingPoints = math.min(state.dingPoints, unspent) -- spent by hand meanwhile
+        if state.dingPoints <= 0 then
+            if state.finalDing then FinishAtMaxLevel() end
+            return
+        end
+    end
     local todo = {}
     if opts.reset then
         local available = (unspent or 0) + SpentPoints(progress.layout)
         for i = 1, math.min(available, #progress.steps) do todo[i] = progress.steps[i] end
     else
-        if not progress.next then return end
+        if not progress.next then
+            if dingOnly then
+                state.dingPoints = 0
+                if state.finalDing then FinishAtMaxLevel() end
+            end
+            return
+        end
         if unspent == 0 then
             if manual then Print("you have no unspent talent points.") end
             return
         end
-        local n = unspent or #progress.remaining
+        local n = dingOnly and state.dingPoints or unspent or #progress.remaining
         for i = 1, math.min(n, #progress.remaining) do todo[i] = progress.remaining[i].t end
     end
     if #todo == 0 then return end
@@ -130,11 +162,14 @@ function AS.TryLearn(manual, opts)
     T.Learn(todo, opts, function(count, lerr)
         state.busy = false
         if count > 0 then ReportBatch(todo, count, opts.reset) end
+        if dingOnly then state.dingPoints = math.max(0, state.dingPoints - count) end
         if lerr then
             state.paused = true
             Print("|cffff4444" .. lerr .. "|r Auto Super Spec paused - type |cffffd100/ass resume|r to try again.")
-        elseif count > 0 then
-            AS.After(1, function() AS.TryLearn() end) -- in case more points arrived meanwhile
+        elseif state.dingPoints > 0 then
+            AS.After(1, function() AS.TryLearn() end) -- another level-up came in meanwhile
+        elseif state.finalDing then
+            FinishAtMaxLevel()
         end
         AS.RefreshUI()
     end)
@@ -178,8 +213,15 @@ function AS.SetActive(id, quiet)
         end
     end
     AS.RefreshUI()
-    AS.After(0.3, function() AS.TryLearn() end)
     return true
+end
+
+-- Retry after a pause: finishes the level-up points if any are left,
+-- otherwise behaves like "Spec now" without the confirmation.
+function AS.Resume()
+    state.paused = false
+    AS.TryLearn(true, { ding = state.dingPoints > 0 })
+    AS.RefreshUI()
 end
 
 -- Make the character match a build right now (respec / spend all points).
@@ -234,7 +276,7 @@ StaticPopupDialogs["AUTOSUPERSPEC_LEARN"] = {
     text = AS.TITLE .. " - |cffffd100%s|r\nLearn %s?",
     button1 = "Learn",
     button2 = "Not now",
-    OnAccept = function() AS.TryLearn(true) end,
+    OnAccept = function() AS.TryLearn(true, { ding = true }) end,
     timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
 }
 
@@ -558,7 +600,7 @@ SlashCmdList["AUTOSUPERSPEC"] = function(msg)
     elseif cmd == "on" or cmd == "off" then
         AS.char.enabled = cmd == "on"
         Print("learning on level-up is " .. cmd .. ".")
-        if AS.char.enabled then state.paused = false; AS.TryLearn() end
+        if AS.char.enabled then state.paused = false end
         AS.RefreshUI()
     elseif cmd == "ask" or cmd == "auto" then
         AS.char.mode = cmd
@@ -567,9 +609,7 @@ SlashCmdList["AUTOSUPERSPEC"] = function(msg)
     elseif cmd == "learn" or cmd == "apply" or cmd == "spec" then
         if AS.char.active then AS.SpecNow(AS.char.active) else Print("not following a build.") end
     elseif cmd == "resume" then
-        state.paused = false
-        AS.TryLearn(true)
-        AS.RefreshUI()
+        AS.Resume()
     elseif cmd == "minimap" then
         AS.ToggleMinimapButton()
     elseif cmd == "view" then
@@ -629,7 +669,6 @@ f:SetScript("OnEvent", function(self, event, arg1, arg2)
     elseif event == "PLAYER_LOGIN" then
         SetupChat()
     elseif event == "PLAYER_ENTERING_WORLD" then
-        ScheduleTry(3)
         -- save this class's talent tree so other characters can see it
         if not state.savedTree then
             AS.After(5, function()
@@ -639,6 +678,12 @@ f:SetScript("OnEvent", function(self, event, arg1, arg2)
         end
     elseif event == "PLAYER_LEVEL_UP" then
         state.paused = false
+        local level = tonumber(arg1) or UnitLevel("player")
+        local b = AS.ActiveBuild()
+        if b and AS.char.enabled and b.class == AS.PlayerClass() and level and level >= 10 then
+            state.dingPoints = state.dingPoints + 1
+            if level >= MaxLevel() then state.finalDing = true end
+        end
         ScheduleTry(1.5)
         AS.After(4, function()
             local b = AS.ActiveBuild()
@@ -651,7 +696,7 @@ f:SetScript("OnEvent", function(self, event, arg1, arg2)
             end
         end)
     elseif event == "PLAYER_REGEN_ENABLED" then
-        if state.waitCombat then
+        if state.waitCombat and state.dingPoints > 0 then
             state.waitCombat = false
             ScheduleTry(0.5)
         end

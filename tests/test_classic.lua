@@ -66,14 +66,20 @@ local b3 = AS.Import("druid:1d", "Broken")
 check(M.LogHas("needs 10 points"), "warns about tier requirement")
 AS.SetActive(b3.id)
 M.Advance(10)
+check(#learned == 0, "activating doesn't learn anything")
+M.level = 22
+M.Fire("PLAYER_LEVEL_UP", 22)
+M.Advance(10)
 check(M.LogHas("paused") and #learned == 0, "pauses on a point it can't learn")
 
 -- ask mode
 AS.char.mode = "ask"
 AS.state.paused = false
 AS.SetActive(b.id)
-M.Advance(1)
-check(M.LastPopup().which == "AUTOSUPERSPEC_LEARN", "ask mode shows a Learn popup")
+M.level = 23
+M.Fire("PLAYER_LEVEL_UP", 23)
+M.Advance(2)
+check(M.LastPopup().which == "AUTOSUPERSPEC_LEARN", "ask mode shows a Learn popup on ding")
 M.ClickPopup("AUTOSUPERSPEC_LEARN")
 M.Advance(3)
 check(#learned > 0, "Learn button learns")
