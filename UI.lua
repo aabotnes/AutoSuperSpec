@@ -383,7 +383,7 @@ local function UpdateCard(c, b, own, layout, meta)
     local active = AS.char.active == b.id
     local cr, cg, cb = AS.ClassRGB(b.class)
 
-    if own and meta and meta.icons and meta.icons[MainTree(b)] then
+    if meta and meta.icons and meta.icons[MainTree(b)] then
         SetIcon(c.icon, meta.icons[MainTree(b)])
     else
         SetClassIcon(c.icon, b.class)
@@ -392,7 +392,7 @@ local function UpdateCard(c, b, own, layout, meta)
     c.name:SetText(b.name)
     if c.name:GetStringWidth() > 210 then c.name:SetWidth(210) end
     local pts = b.points and ("   |cffaaaaaa" .. b.points .. " points|r") or ""
-    c.detail:SetText(AS.TreeText(b, own and meta and meta.names) .. pts)
+    c.detail:SetText(AS.TreeText(b, meta and meta.names) .. pts)
 
     c.nextText = nil
     if active and own then
@@ -537,7 +537,7 @@ local function CreateUI()
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:AddLine("New build", 1, 1, 1)
         GameTooltip:AddLine(self:IsEnabled() and "Make a build from scratch in the talent calculator."
-            or ("Log in a %s to make builds for that class."):format(AS.ClassName(selectedClass)), nil, nil, nil, true)
+            or ("Log in a %s once to save its talent tree, then you can make builds for it on any character."):format(AS.ClassName(selectedClass)), nil, nil, nil, true)
         GameTooltip:Show()
     end)
     ui.newBuild:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -660,8 +660,7 @@ function AS.RefreshUI()
     selectedClass = selectedClass or myClass
     local own = selectedClass == myClass
 
-    local layout, meta
-    if own then layout, meta = T.Layout() end
+    local layout, meta = T.Layout(selectedClass)
     if not layout then meta = nil end
 
     -- classes
@@ -689,9 +688,15 @@ function AS.RefreshUI()
     SetClassIcon(ui.headerIcon, selectedClass)
     ui.headerTitle:SetText(AS.ClassName(selectedClass) .. " builds")
     ui.headerTitle:SetTextColor(AS.ClassRGB(selectedClass))
-    ui.newBuild:SetEnabled(own)
-    ui.headerSub:SetText(own and "Shared by all your characters, activated per character.  Shift-click a build to link it in chat."
-        or ("Log in a %s to use these builds. You can still import and share them."):format(AS.ClassName(selectedClass)))
+    ui.newBuild:SetEnabled(layout ~= nil)
+    local cname = AS.ClassName(selectedClass)
+    if own then
+        ui.headerSub:SetText("Shared by all your characters, activated per character.  Shift-click a build to link it in chat.")
+    elseif layout then
+        ui.headerSub:SetText(("View, edit and share %s builds here. Log in a %s to learn them."):format(cname, cname))
+    else
+        ui.headerSub:SetText(("Log in a %s once to save its talent tree. You can still import and share builds."):format(cname))
+    end
 
     -- cards
     local builds = AS.BuildsForClass(selectedClass)
@@ -774,8 +779,14 @@ end
 
 function AS.GetSelectedClass() return selectedClass end
 
+local scanned = false
+
 function AS.ShowUI(class)
     if not ui then CreateUI() end
+    if not scanned and not (InCombatLockdown and InCombatLockdown()) then
+        scanned = true
+        pcall(T.ScanClasses)
+    end
     if class then selectedClass = class; ui.offset = 0 end
     AS.ShowPage("list")
 end

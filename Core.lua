@@ -377,9 +377,9 @@ function AS.Import(text, name, quiet)
 
     local ownClass = parsed.class == AS.PlayerClass()
     local layout
-    if ownClass then
-        layout, err = AS.Talents.Layout()
-        if not layout then return nil, err end
+    layout, err = AS.Talents.Layout(parsed.class)
+    if ownClass and not layout then return nil, err end
+    if layout then
         local ok, why = AS.CheckRanks(parsed.ranks, layout)
         if not ok and not quiet then
             AS.Print("|cffff8800warning|r - " .. why .. " Auto Super Spec may be reading your trees differently from Wowhead. Type |cffffd100/ass debug|r and send the output to the addon author.")
@@ -389,10 +389,10 @@ function AS.Import(text, name, quiet)
     local code, points, perTree = AS.Canonicalize(parsed.order, parsed.ranks, layout)
     if not code then return nil, points end
 
-    if ownClass then
+    if layout then
         local steps, rerr = AS.ResolveSteps(code, layout)
-        if not steps then return nil, rerr end
-        local problems = AS.Validate(steps)
+        if not steps and ownClass then return nil, rerr end
+        local problems = steps and AS.Validate(steps) or {}
         if #problems > 0 and not quiet then
             AS.Print("|cffff8800warning|r - this order breaks the talent rules and may stall:")
             for _, p in ipairs(problems) do AS.Print("  " .. p) end

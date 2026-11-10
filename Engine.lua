@@ -531,10 +531,22 @@ SlashCmdList["AUTOSUPERSPEC"] = function(msg)
     elseif cmd == "view" then
         local b = AS.ActiveBuild()
         if b then AS.ShowBuild(b.id) else Print("not following a build.") end
+    elseif cmd == "scan" then
+        T.SaveOwnTree()
+        local results = T.ScanClasses(true)
+        if not results then Print("can't read talent trees in combat.") return end
+        local ok, failed = {}, {}
+        for class, r in pairs(results) do
+            if r == true then ok[#ok + 1] = AS.ClassName(class) else failed[#failed + 1] = AS.ClassName(class) end
+        end
+        table.sort(ok); table.sort(failed)
+        Print("read talent trees: " .. (#ok > 0 and table.concat(ok, ", ") or "none")
+            .. (#failed > 0 and (". Not readable from here: " .. table.concat(failed, ", ") .. " - log in one of each once and they're saved.") or "."))
+        AS.RefreshUI()
     elseif cmd == "debug" then
         AS.ShowCopyWindow("Auto Super Spec debug - press Ctrl+C to copy", T.DebugText())
     else
-        Print("commands: /ass (window), /ass view, /ass import <link>, /ass status, /ass list, /ass on|off, /ass ask|auto, /ass learn, /ass resume, /ass minimap, /ass debug")
+        Print("commands: /ass (window), /ass view, /ass import <link>, /ass status, /ass list, /ass on|off, /ass ask|auto, /ass learn, /ass resume, /ass minimap, /ass scan, /ass debug")
     end
 end
 
@@ -583,6 +595,13 @@ f:SetScript("OnEvent", function(self, event, arg1, arg2)
         SetupChat()
     elseif event == "PLAYER_ENTERING_WORLD" then
         ScheduleTry(3)
+        -- save this class's talent tree so other characters can see it
+        if not state.savedTree then
+            AS.After(5, function()
+                if state.savedTree or (InCombatLockdown and InCombatLockdown()) then return end
+                state.savedTree = T.SaveOwnTree()
+            end)
+        end
     elseif event == "PLAYER_LEVEL_UP" then
         state.paused = false
         ScheduleTry(1.5)

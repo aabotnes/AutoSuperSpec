@@ -91,12 +91,8 @@ local function SplitByColumns(nodes, count)
     return trees
 end
 
-function Traits.Layout()
-    local configID = ConfigID()
-    if not configID then return nil, "your talents aren't loaded yet - try again in a moment." end
-    local treeID = TreeID(configID)
-    if not treeID then return nil, "couldn't find your talent tree." end
-
+-- Reads one trait tree as seen through a config (yours, or the "view" config).
+local function ReadTree(configID, treeID)
     -- read every visible node
     local nodes, byID = {}, {}
     for _, nodeID in ipairs(Try(C_Traits.GetTreeNodes, treeID) or {}) do
@@ -163,6 +159,14 @@ function Traits.Layout()
         end
     end
     return layout, { names = names, icons = icons, configID = configID, treeID = treeID, groups = groups, grouped = #groupOrder >= 2 }
+end
+
+function Traits.Layout()
+    local configID = ConfigID()
+    if not configID then return nil, "your talents aren't loaded yet - try again in a moment." end
+    local treeID = TreeID(configID)
+    if not treeID then return nil, "couldn't find your talent tree." end
+    return ReadTree(configID, treeID)
 end
 
 function Traits.Unspent()
@@ -383,16 +387,167 @@ function Talents.Name()
     return b and b.name or "none"
 end
 
-function Talents.Layout()
-    local b = Backend()
-    if not b then return nil, "this game client has no talent functions Auto Super Spec knows." end
-    return b.Layout()
+------------------------------------------------------------------------------
+-- Talent data for every class
+------------------------------------------------------------------------------
+-- Your own class is always read live. Other classes come from data saved for
+-- the whole account: each character saves its class's tree when it logs in,
+-- and the addon also reads other classes' trees through the game's "view a
+-- talent link" mode where the client allows it. Saved data is tagged with the
+-- client build, so it's re-read after a game update.
+
+local VIEW_CONFIG_ID = (Constants and Constants.TraitConsts and Constants.TraitConsts.VIEW_TRAIT_CONFIG_ID) or -3
+local memo = {}
+
+local function ClientBuild()
+    local _, build = GetBuildInfo()
+    return tostring(build)
+end
+
+local function Saved(class)
+    return AS.db and AS.db.talentData and AS.db.talentData[class]
+end
+
+local function Store(class, data)
+    AS.db.talentData = AS.db.talentData or {}
+    AS.db.talentData[class] = data
+    memo[class] = nil
+end
+
+local function Serialize(layout, meta, source)
+    local data = { build = ClientBuild(), source = source, names = meta.names or {}, icons = meta.icons or {}, trees = {} }
+    for i, list in ipairs(layout) do
+        local out = {}
+        for _, t in ipairs(list) do
+            local req = {}
+            for _, pre in ipairs(t.requires or {}) do req[#req + 1] = pre.key end
+            local desc
+            if t.entryID or t.spellID then
+                desc = {}
+                for r = 1, t.maxRank do desc[r] = Talents.Description(t, r) end
+            end
+            out[#out + 1] = {
+                key = t.key, name = t.name, icon = t.icon, maxRank = t.maxRank, x = t.x, y = t.y,
+                entryID = t.entryID, spellID = t.spellID, req = req, desc = desc,
+            }
+        end
+        data.trees[i] = out
+    end
+    return data
+end
+
+local function Deserialize(data)
+    local layout, byKey = {}, {}
+    for i, list in ipairs(data.trees or {}) do
+        local tree = {}
+        for _, d in ipairs(list) do
+            local t = {
+                key = d.key, name = d.name, icon = d.icon, maxRank = d.maxRank, x = d.x, y = d.y,
+                entryID = d.entryID, spellID = d.spellID, desc = d.desc, req = d.req, rank = 0, requires = {},
+            }
+            tree[#tree + 1] = t
+            byKey[t.key] = t
+        end
+        layout[i] = SortTree(tree, i)
+    end
+    for _, tree in ipairs(layout) do
+        for _, t in ipairs(tree) do
+            for _, key in ipairs(t.req or {}) do
+                if byKey[key] then table.insert(t.requires, byKey[key]) end
+            end
+            t.req = nil
+        end
+    end
+    return layout, { names = data.names, icons = data.icons, saved = true, build = data.build, source = data.source }
+end
+
+-- Layout for a class: live for your own class, saved data for others.
+function Talents.Layout(class)
+    local mine = AS.PlayerClass()
+    if class == nil or class == mine then
+        local b = Backend()
+        if not b then return nil, "this game client has no talent functions Auto Super Spec knows." end
+        return b.Layout()
+    end
+    local data = Saved(class)
+    if not data then
+        local name = AS.ClassName(class)
+        return nil, ("no %s talent tree saved yet. Log in a %s once and its tree is saved for all your characters."):format(name, name)
+    end
+    local m = memo[class]
+    if not m or m.data ~= data then
+        local layout, meta = Deserialize(data)
+        m = { data = data, layout = layout, meta = meta }
+        memo[class] = m
+    end
+    return m.layout, m.meta
+end
+
+function Talents.HasData(class)
+    return class == AS.PlayerClass() or Saved(class) ~= nil
+end
+
+-- Saves your own class's tree for your other characters.
+function Talents.SaveOwnTree()
+    local class, b = AS.PlayerClass(), Backend()
+    if not class or not b then return false end
+    local layout, meta = b.Layout()
+    if not layout then return false end
+    Store(class, Serialize(layout, meta, "live"))
+    return true
+end
+
+local function ClassID(class)
+    if type(GetNumClasses) ~= "function" or type(GetClassInfo) ~= "function" then return nil end
+    for id = 1, (GetNumClasses() or 0) do
+        local _, file = GetClassInfo(id)
+        if file == class then return id end
+    end
+end
+
+-- Reads another class's tree through the game's talent-link view mode.
+function Talents.ReadClassTree(class)
+    if not Traits.Available() or type(C_ClassTalents.InitializeViewLoadout) ~= "function" then
+        return nil, "this client has no talent view mode"
+    end
+    local classID = ClassID(class)
+    if not classID then return nil, "unknown class" end
+    local specID = Try(GetSpecializationInfoForClassID, classID, 1)
+    if not specID then return nil, "no specialization found for the class" end
+    local treeID = Try(C_ClassTalents.GetTraitTreeForSpec, specID)
+    if not treeID then return nil, "no talent tree found for the class" end
+    if not pcall(C_ClassTalents.InitializeViewLoadout, specID, AS.MaxPoints() + 9) then
+        return nil, "the game refused to open the talent view"
+    end
+    Try(C_ClassTalents.ViewLoadout, {})
+    return ReadTree(VIEW_CONFIG_ID, treeID)
+end
+
+-- Fills in classes that are missing (or saved on an older game build).
+function Talents.ScanClasses(force)
+    if InCombatLockdown and InCombatLockdown() then return nil end
+    local results, build, mine = {}, ClientBuild(), AS.PlayerClass()
+    for _, class in ipairs(AS.CLASSES) do
+        local have = Saved(class)
+        if class ~= mine and (force or not have or (have.build ~= build and have.source ~= "live")) then
+            local layout, meta = Talents.ReadClassTree(class)
+            if layout then
+                Store(class, Serialize(layout, meta, "view"))
+                results[class] = true
+            else
+                results[class] = meta or false
+            end
+        end
+    end
+    Talents.lastScan = results
+    return results
 end
 
 function Talents.Unspent() local b = Backend(); return b and b.Unspent() end
 
 -- The talent's text at a given rank (as the talent window shows it).
 function Talents.Description(t, rank)
+    if t.desc then return t.desc[rank] end
     local text
     if t.entryID and C_Traits then text = Try(C_Traits.GetTraitDescription, t.entryID, rank) end
     if (not text or text == "") and t.spellID and C_Spell then text = Try(C_Spell.GetSpellDescription, t.spellID) end
@@ -419,6 +574,12 @@ function Talents.DebugText()
     add(("Auto Super Spec debug - client %s.%s, interface %s, backend %s"):format(tostring(version), tostring(build), tostring(toc), Talents.Name()))
     local _, class = UnitClass("player")
     add(("class %s, level %s, unspent %s"):format(tostring(class), tostring(UnitLevel("player")), tostring(Talents.Unspent())))
+    for _, class in ipairs(AS.CLASSES) do
+        local d = Saved(class)
+        local scan = Talents.lastScan and Talents.lastScan[class]
+        add(("saved %s: %s%s"):format(class, d and (d.source .. " on build " .. tostring(d.build)) or "none",
+            scan ~= nil and (" (last view read: " .. tostring(scan) .. ")") or ""))
+    end
     local layout, meta = Talents.Layout()
     if not layout then
         add("layout error: " .. tostring(meta))

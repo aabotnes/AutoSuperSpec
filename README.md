@@ -59,11 +59,22 @@ Click a build, or **New build**, to open it in the talent calculator. It opens i
 
 **Using it:** **Activate**, **Spec now** and **Share** at the bottom work on the saved build. **Share** also works on an unsaved draft.
 
-**Other classes:** you can see the learning order of another class's builds, but you can only see and edit their talent tree on a character of that class. The game only gives addons talent data for the class you're playing.
+**Other classes:** you get the full calculator for every class whose talent tree is saved (see below), even on a different character. You can view, edit, create and share their builds. Learning talents only happens on a character of that class.
+
+## Talent trees for every class
+
+The talent data comes straight from the game, so it always matches your client. There's no website and nothing to update by hand.
+
+- **Your own class:** read live, every time.
+- **Other classes:** the first time you open the window each session, the addon tries to read every class's tree through the game's "view a talent link" mode, like when you open someone else's talent link. If that works, you see every class's full tree right away.
+- **Fallback:** each time you log in, your character's tree is saved for your whole account. So even if the game doesn't allow the view mode, logging in one character of each class once makes every tree available on all your characters.
+- Saved trees are tagged with the game version and read again after a game update.
+- A class with no saved tree yet still shows its builds' learning order, plus a note to log in that class once.
+- `/ass scan` reads all trees again and tells you which classes worked.
 
 ## Account-wide builds, per-character activation
 
-- **Saved for your whole account:** builds and the minimap button position. Every character can see, edit and share every build.
+- **Saved for your whole account:** builds, every class's saved talent tree, and the minimap button position. Every character can see, edit and share every build.
 - **Saved per character:** which build is active, plus **Learn on level up** and **Ask first**. Each character follows its own build.
 
 ## Minimap button
@@ -99,6 +110,7 @@ Everyone with the addon sees the build as a clickable, class-colored **[Auto Sup
 | `/ass ask` / `/ass auto` | ask before learning, or learn without asking |
 | `/ass resume` | try again after learning paused |
 | `/ass minimap` | hide or show the minimap button |
+| `/ass scan` | read every class's talent tree again and report which ones worked |
 | `/ass debug` | shows what the addon sees of your talent tree, ready to copy, for bug reports |
 
 ## Good to know

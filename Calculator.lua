@@ -19,7 +19,7 @@ local calc -- the page frame and its state
 
 -- Resolves the draft (talent keys) against the current talent data.
 local function Current()
-    local layout, meta = T.Layout()
+    local layout, meta = T.Layout(calc.class)
     if not layout then return nil end
     local byKey = {}
     for _, tree in ipairs(layout) do
@@ -71,13 +71,13 @@ end
 local function Load(build, class)
     calc.buildId = build and build.id or nil
     calc.class = build and build.class or class
-    calc.editable = calc.class == AS.PlayerClass() and T.Layout() ~= nil
+    calc.editable = T.Layout(calc.class) ~= nil
     calc.keys = {}
     calc.offset = 0
     calc.savedName = build and build.name or ("New " .. AS.ClassName(calc.class) .. " build")
     calc.savedCode = ""
     if build and calc.editable then
-        local layout = T.Layout()
+        local layout = T.Layout(calc.class)
         local steps = AS.ResolveSteps(build.code, layout)
         if steps then
             for i, t in ipairs(steps) do calc.keys[i] = t.key end
@@ -711,8 +711,9 @@ function AS.RefreshCalculator()
         for _, p in ipairs(calc.trees) do p:Hide() end
         local b = calc.buildId and AS.GetBuild(calc.buildId)
         steps = b and RawSteps(b.code) or {}
-        calc.noData:SetText(("Log in a %s to see this build on the talent tree and edit it.\n\nPoints per tree: %s"):format(
-            AS.ClassName(calc.class), b and b.trees or "?"))
+        local name = AS.ClassName(calc.class)
+        calc.noData:SetText(("No %s talent tree saved yet.\nLog in a %s once and its tree is saved for all your characters.\n\nPoints per tree: %s"):format(
+            name, name, b and b.trees or "?"))
         calc.noData:Show()
         calc.summary:SetText(AS.ClassName(calc.class) .. (b and b.points and ("  ·  " .. b.points .. " points") or ""))
         calc.summary:SetTextColor(AS.ClassRGB(calc.class))
@@ -745,8 +746,8 @@ end
 
 function AS.NewBuild(class)
     class = class or AS.PlayerClass()
-    if class ~= AS.PlayerClass() then
-        AS.Print(("log in a %s to make builds for that class."):format(AS.ClassName(class)))
+    if not T.HasData(class) then
+        AS.Print(select(2, T.Layout(class)))
         return
     end
     AS.ConfirmDiscard(function()

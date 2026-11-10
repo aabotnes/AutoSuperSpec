@@ -36,8 +36,28 @@ for ti, tree in ipairs(trees) do
         committed[id], staged[id] = 0, 0
     end
 end
+local mageTrees = {
+    { group = 21, name = "Arcane", talents = { { "Arcane Subtlety", 1, 1, 2 }, { "Arcane Focus", 1, 2, 5 }, { "Improved Arcane Missiles", 1, 3, 5 } } },
+    { group = 22, name = "Fire", talents = { { "Improved Fireball", 1, 2, 5 } } },
+    { group = 23, name = "Frost", talents = { { "Improved Frostbolt", 1, 2, 5 }, { "Elemental Precision", 1, 3, 3 } } },
+}
+local mageList = {}
+for _, tree in ipairs(mageTrees) do
+    for _, d in ipairs(tree.talents) do
+        id = id + 7
+        nodes[id] = { id = id, name = d[1], row = d[2], col = d[3], max = d[4], group = tree.group, mage = true }
+        table.insert(mageList, id)
+        committed[id], staged[id] = 0, 0
+    end
+end
+local viewOpened = {}
+function GetNumClasses() return 9 end
+local CLASS_FILES = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK" }
+function GetClassInfo(i) return CLASS_FILES[i], CLASS_FILES[i], i end
+function GetSpecializationInfoForClassID(classID, index) return classID * 100 + index end
+
 local function current(nid) return (resetPending and 0 or committed[nid]) + staged[nid] end
-local function spentNow() local s = 0; for nid in pairs(nodes) do s = s + current(nid) end; return s end
+local function spentNow() local s = 0; for nid, n in pairs(nodes) do if not n.mage then s = s + current(nid) end end; return s end
 local function groupPoints(g) local s = 0; for nid, n in pairs(nodes) do if n.group == g then s = s + current(nid) end end; return s end
 local function anyStaged() if resetPending then return true end; for _, v in pairs(staged) do if v ~= 0 then return true end end end
 local canRefund = true
@@ -49,6 +69,9 @@ local commits = 0
 
 C_ClassTalents = {
     GetActiveConfigID = function() return 1 end,
+    GetTraitTreeForSpec = function(specID) return specID == 801 and 600 or nil end,
+    InitializeViewLoadout = function(specID, level) viewOpened[#viewOpened + 1] = specID .. "@" .. level end,
+    ViewLoadout = function() return true end,
     CanEditTalents = function() return true end,
     CommitConfig = function()
         if not anyStaged() then return false end
@@ -63,16 +86,22 @@ C_ClassTalents = {
 }
 C_Traits = {
     GetConfigInfo = function() return { ID = 1, treeIDs = { 500 } } end,
-    GetTreeNodes = function() return nodeList end,
-    GetNodeInfo = function(_, nid)
+    GetTreeNodes = function(treeID) return treeID == 600 and mageList or nodeList end,
+    GetNodeInfo = function(configID, nid)
         local n = nodes[nid]
+        if n.mage and configID ~= -3 then return nil end
         return { ID = nid, posX = n.col * 600, posY = n.row * 600, entryIDs = { nid * 10 }, isVisible = true,
             activeRank = committed[nid], currentRank = current(nid), ranksPurchased = committed[nid], maxRanks = n.max,
             groupIDs = { 999, n.group }, visibleEdges = edges[nid] or {} }
     end,
     GetEntryInfo = function(_, eid) return { definitionID = eid, maxRanks = 1 } end,
     GetDefinitionInfo = function(def) return { spellID = def } end,
-    GetGroupDisplayInfoByTreeID = function()
+    GetGroupDisplayInfoByTreeID = function(treeID)
+        if treeID == 600 then
+            return { { groupID = 21, orderIndex = 1, displayName = "Arcane", icon = 21 },
+                { groupID = 22, orderIndex = 2, displayName = "Fire", icon = 22 },
+                { groupID = 23, orderIndex = 3, displayName = "Frost", icon = 23 } }
+        end
         return { { groupID = 999, orderIndex = 0, displayName = "Warrior" },
             { groupID = 13, orderIndex = 3, displayName = "Protection", icon = 3 },
             { groupID = 11, orderIndex = 1, displayName = "Arms", icon = 1 },
@@ -102,6 +131,8 @@ C_Spell = {
 local DIR = arg[1]
 local AS = M.Load(DIR, { "Core.lua", "Talents.lua", "Engine.lua", "UI.lua", "Calculator.lua", "Minimap.lua" })
 check(AS.Talents.Name() == "traits", "uses the trait backend")
+M.Fire("PLAYER_ENTERING_WORLD")
+M.Advance(6)
 
 -- layout
 local layout, meta = AS.Talents.Layout()
@@ -255,9 +286,36 @@ check(nb and nb.code == "2bbbbbe" and nb.points == 6, "new build saved: " .. tos
 C.share:GetScript("OnClick")(C.share)
 for _, r in ipairs(F.menu.rows) do if r:IsShown() and r.label:GetText() == "Chat message I'm typing" then r:GetScript("OnClick")(r) end end
 check(M.chatBox:GetText():find("[Auto Super Spec: Prot opener - warrior:2bbbbbe]", 1, true), "share from calculator: " .. M.chatBox:GetText())
--- other class: read-only
+-- another class through the view mode: full calculator on a warrior
+check(viewOpened[1] == "801@60", "mage tree read through the talent view mode: " .. tostring(viewOpened[1]))
+check(AS.db.talentData.MAGE and AS.db.talentData.MAGE.source == "view", "mage tree saved for the account")
 AS.ShowBuild(mage.id)
-check(C.noData:IsShown() and C.order.rows[1].text:GetText():find("Tree 1, talent a") and not C.trees[1]:IsShown(), "other-class build is read-only with the raw order")
+check(C.trees[1]:IsShown() and C.trees[1].title:GetText() == "Arcane" and C.trees[3].title:GetText() == "Frost", "mage build opens on the real mage trees")
+local focus
+for _, x in ipairs(C.trees[1].buttons) do if x.talent and x.talent.name == "Arcane Focus" then focus = x end end
+check(focus.rank:GetText() == "5/5", "mage build ranks shown (Arcane Focus maxed using the real max rank)")
+focus:GetScript("OnEnter")(focus)
+check(table.concat(M.tipLines, "|"):find("Arcane Focus rank 5 text", 1, true), "mage tooltip uses saved talent text")
+local missiles
+for _, x in ipairs(C.trees[1].buttons) do if x.talent and x.talent.name == "Improved Arcane Missiles" then missiles = x end end
+missiles:GetScript("OnClick")(missiles, "LeftButton")
+check(missiles.rank:GetText() == "2/5", "added a point to a mage talent")
+C.save:GetScript("OnClick")(C.save)
+check(C.message:GetText() == "Saved." and AS.GetBuild(mage.id).code == "0aabbbbbc2aaaaa0c", "mage build edited and saved on a warrior: " .. AS.GetBuild(mage.id).code)
+check(not C.toggle:IsEnabled() and not C.spec:IsEnabled(), "can't activate a mage build on a warrior")
+AS.NewBuild("MAGE")
+check(F.page == "calc" and C.nameBox:GetText() == "New Mage build" and C.trees[2].title:GetText() == "Fire", "new mage build from a warrior")
+-- the empty draft is unchanged, so opening another build does not ask
+-- a class with no saved tree stays read-only
+local druid = AS.Import("druid:1abbbb2A", "Feral")
+AS.ShowBuild(druid.id)
+check(C.noData:IsShown() and C.noData:GetText():find("Log in a Druid once") and C.order.rows[1].text:GetText():find("Tree 2, talent a"), "class with no saved tree: read-only order + how to get it")
+-- the warrior tree is saved too, for other characters
+check(AS.db.talentData.WARRIOR and AS.db.talentData.WARRIOR.source == "live", "own tree saved on login")
+function UnitClass() return "Mage", "MAGE" end
+local wl, wm = AS.Talents.Layout("WARRIOR")
+check(wl and wm.saved and wl[3][2].name == "Anticipation" and wl[3][2].rank == 0 and AS.Talents.Description(wl[3][2], 2) == "Anticipation rank 2 text", "another character sees the saved warrior tree")
+function UnitClass() return "Warrior", "WARRIOR" end
 -- sharing to any chat
 local sent = {}
 C_ChatInfo = { SendChatMessage = function(msg, chatType, lang, target) sent[#sent + 1] = { msg = msg, type = chatType, target = target } end }
