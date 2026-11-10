@@ -6,8 +6,11 @@ Import talent builds from Wowhead, pick the one you're leveling, and Auto Super 
 
 ## Install
 
-1. Delete any old `Interface\AddOns\AutoSpec` folder. Then unzip so you get `Interface\AddOns\AutoSuperSpec\AutoSuperSpec.toc` (not `AddOns\AutoSuperSpec\AutoSuperSpec\...`).
-2. Restart the game and make sure **Auto Super Spec** is ticked in the AddOns list on the character screen.
+**Easiest:** download `AutoSuperSpec.zip` from the [latest release](https://github.com/aabotnes/AutoSuperSpec/releases/latest) and unzip it into your `Interface\AddOns` folder.
+
+**From the code:** click **Code → Download ZIP**, unzip it, rename the folder `AutoSuperSpec-main` to `AutoSuperSpec`, and move it into `Interface\AddOns`.
+
+Either way you should end up with `Interface\AddOns\AutoSuperSpec\AutoSuperSpec.toc`. The folder must be named exactly `AutoSuperSpec`, or the game won't load it. Restart the game and make sure **Auto Super Spec** is ticked in the AddOns list on the character screen.
 
 ## The window (`/ass` or the minimap button)
 

@@ -1,0 +1,4 @@
+# Keep GitHub's "Download ZIP" (and release source zips) to just the addon files.
+tests/ export-ignore
+.pkgmeta export-ignore
+.gitattributes export-ignore
