@@ -517,6 +517,32 @@ local function CreateUI()
         ui.classButtons[i] = b
     end
 
+    -- talent tree scan box (bottom of the class list)
+    local scan = Panel(side, 0.5)
+    scan:SetPoint("BOTTOMLEFT", 6, 6)
+    scan:SetPoint("BOTTOMRIGHT", -6, 6)
+    scan:SetHeight(104)
+    scan.title = Text(scan, "GameFontNormal")
+    scan.title:SetPoint("TOPLEFT", 8, -8)
+    scan.title:SetPoint("RIGHT", -8, 0)
+    scan.title:SetJustifyH("LEFT")
+    scan.text = Text(scan, "GameFontHighlightSmall")
+    scan.text:SetPoint("TOPLEFT", scan.title, "BOTTOMLEFT", 0, -4)
+    scan.text:SetPoint("RIGHT", -8, 0)
+    scan.text:SetJustifyH("LEFT")
+    scan.text:SetWordWrap(true)
+    scan.button = Button(scan, "Scan talent trees", SIDEBAR_W - 28, 26, function() AS.ScanTrees() end)
+    scan.button:SetPoint("BOTTOM", 0, 8)
+    scan.button:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine("Scan talent trees", 1, 1, 1)
+        GameTooltip:AddLine("Reads every class's talent tree from the game again and saves it for all your characters. "
+            .. "Classes the game won't show from here are saved when you log in one of them.", nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    scan.button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    ui.scanBox = scan
+
     -- right side ------------------------------------------------------------
     local main = CreateFrame("Frame", nil, ui.listPage)
     main:SetPoint("TOPLEFT", side, "TOPRIGHT", 10, 0)
@@ -675,6 +701,10 @@ function AS.RefreshUI()
             b.name:SetTextColor(r, g, bl)
             local n = AS.CountForClass(class)
             b.count:SetText(n > 0 and n or "")
+            local hasTree = T.HasData(class)
+            b.icon:SetDesaturated(not hasTree)
+            b.icon:SetAlpha(hasTree and 1 or 0.5)
+            b.name:SetAlpha(hasTree and 1 or 0.6)
             local sel = class == selectedClass
             b.sel:SetColorTexture(r, g, bl, sel and 0.18 or 0)
             b.bar:SetColorTexture(r, g, bl, sel and 1 or 0)
@@ -682,6 +712,24 @@ function AS.RefreshUI()
         else
             b:Hide()
         end
+    end
+
+    -- talent tree scan box
+    local missing = AS.MissingTrees()
+    local total = #AS.CLASSES
+    local sb = ui.scanBox
+    if #missing > 0 then
+        sb.bg:SetColorTexture(0.45, 0.28, 0.02, 0.55)
+        sb.title:SetText(("|cffffd100Talent trees: %d / %d|r"):format(total - #missing, total))
+        local names = {}
+        for _, c in ipairs(missing) do names[#names + 1] = AS.ClassName(c) end
+        sb.text:SetText("Missing: " .. table.concat(names, ", "))
+        sb.button:SetText("Scan talent trees")
+    else
+        sb.bg:SetColorTexture(0, 0, 0, 0.35)
+        sb.title:SetText(("|cff33ff33Talent trees: %d / %d|r"):format(total, total))
+        sb.text:SetText("All classes saved.")
+        sb.button:SetText("Rescan")
     end
 
     -- header

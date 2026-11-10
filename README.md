@@ -70,7 +70,7 @@ The talent data comes straight from the game, so it always matches your client. 
 - **Fallback:** each time you log in, your character's tree is saved for your whole account. So even if the game doesn't allow the view mode, logging in one character of each class once makes every tree available on all your characters.
 - Saved trees are tagged with the game version and read again after a game update.
 - A class with no saved tree yet still shows its builds' learning order, plus a note to log in that class once.
-- `/ass scan` reads all trees again and tells you which classes worked.
+- **Scan talent trees** (bottom of the class list) shows how many classes have a saved tree. While any are missing, the box turns amber, lists the missing classes, and offers a big **Scan talent trees** button. Once every class is saved, it becomes a **Rescan** button, so you can scan again any time. Classes without a saved tree have a dimmed icon, and the calculator shows the same scan button when you open a build whose tree is missing. `/ass scan` does the same from chat.
 
 ## Account-wide builds, per-character activation
 

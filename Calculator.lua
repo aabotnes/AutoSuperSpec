@@ -402,6 +402,9 @@ function AS.CreateCalculator(parent, top)
     calc.noData = U.Text(calc, "GameFontDisable")
     calc.noData:SetPoint("CENTER", calc.trees[2], "CENTER")
     calc.noData:SetWidth(3 * TREE_W)
+    calc.scanButton = U.Button(calc, "Scan talent trees", 180, 26, function() AS.ScanTrees() end)
+    calc.scanButton:SetPoint("TOP", calc.noData, "BOTTOM", 0, -16)
+    calc.scanButton:Hide()
 
     -- order list
     local o = U.Panel(calc, 0.45)
@@ -698,6 +701,7 @@ function AS.RefreshCalculator()
     local cur = calc.editable and Current()
     if cur then
         calc.noData:Hide()
+        calc.scanButton:Hide()
         for i, p in ipairs(calc.trees) do p:Show(); DrawTree(p, i, cur) end
         steps = cur.steps
         local pts = #steps
@@ -715,6 +719,7 @@ function AS.RefreshCalculator()
         calc.noData:SetText(("No %s talent tree saved yet.\nLog in a %s once and its tree is saved for all your characters.\n\nPoints per tree: %s"):format(
             name, name, b and b.trees or "?"))
         calc.noData:Show()
+        calc.scanButton:Show()
         calc.summary:SetText(AS.ClassName(calc.class) .. (b and b.points and ("  ·  " .. b.points .. " points") or ""))
         calc.summary:SetTextColor(AS.ClassRGB(calc.class))
         calc.hint:SetText("")
@@ -727,6 +732,14 @@ end
 ------------------------------------------------------------------------------
 -- Opening
 ------------------------------------------------------------------------------
+
+-- After a scan: show the full tree if this class's tree is now saved.
+function AS.ReloadCalculator()
+    if not calc or not calc:IsShown() or calc.editable or not calc.class then return end
+    if not T.HasData(calc.class) then return end
+    local b = calc.buildId and AS.GetBuild(calc.buildId)
+    Load(b, calc.class)
+end
 
 function AS.ShowBuild(id)
     local b = AS.GetBuild(id)

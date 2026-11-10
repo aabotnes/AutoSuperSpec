@@ -51,8 +51,9 @@ for _, tree in ipairs(mageTrees) do
     end
 end
 local viewOpened = {}
-function GetNumClasses() return 9 end
-local CLASS_FILES = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK" }
+function GetNumClasses() return 11 end
+local CLASS_FILES = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "MONK", "DRUID" }
+local readable = { [801] = true } -- specs the view mode can read (mage)
 function GetClassInfo(i) return CLASS_FILES[i], CLASS_FILES[i], i end
 function GetSpecializationInfoForClassID(classID, index) return classID * 100 + index end
 
@@ -69,7 +70,7 @@ local commits = 0
 
 C_ClassTalents = {
     GetActiveConfigID = function() return 1 end,
-    GetTraitTreeForSpec = function(specID) return specID == 801 and 600 or nil end,
+    GetTraitTreeForSpec = function(specID) return readable[specID] and 600 or nil end,
     InitializeViewLoadout = function(specID, level) viewOpened[#viewOpened + 1] = specID .. "@" .. level end,
     ViewLoadout = function() return true end,
     CanEditTalents = function() return true end,
@@ -307,9 +308,28 @@ AS.NewBuild("MAGE")
 check(F.page == "calc" and C.nameBox:GetText() == "New Mage build" and C.trees[2].title:GetText() == "Fire", "new mage build from a warrior")
 -- the empty draft is unchanged, so opening another build does not ask
 -- a class with no saved tree stays read-only
-local druid = AS.Import("druid:1abbbb2A", "Feral")
+local druid = AS.Import("druid:0aab", "Balance")
 AS.ShowBuild(druid.id)
-check(C.noData:IsShown() and C.noData:GetText():find("Log in a Druid once") and C.order.rows[1].text:GetText():find("Tree 2, talent a"), "class with no saved tree: read-only order + how to get it")
+check(C.noData:IsShown() and C.noData:GetText():find("Log in a Druid once") and C.order.rows[1].text:GetText():find("Tree 1, talent a"), "class with no saved tree: read-only order + how to get it")
+check(C.scanButton:IsShown(), "calculator offers a scan button when the tree is missing")
+-- scan box on the list page
+local SB = F.scanBox
+check(SB.title:GetText():find("Talent trees: 2 / 9") and SB.text:GetText():find("Druid") and SB.button:GetText() == "Scan talent trees", "scan box shows missing trees: " .. SB.title:GetText() .. " " .. SB.text:GetText())
+-- the druid tree becomes readable: scanning from the calculator fills it in place
+readable[1101] = true
+C.scanButton:GetScript("OnClick")(C.scanButton)
+check(AS.db.talentData.DRUID and C.trees[1]:IsShown() and not C.scanButton:IsShown(), "scan from the calculator loads the tree right away")
+C.back:GetScript("OnClick")(C.back)
+check(SB.title:GetText():find("3 / 9"), "scan box updated on the list page: " .. SB.title:GetText())
+-- everything readable: rescan from the list page
+for _, sp in ipairs({ 201, 301, 401, 501, 701, 901 }) do readable[sp] = true end
+C.back:GetScript("OnClick")(C.back)
+SB.button:GetScript("OnClick")(SB.button)
+check(SB.title:GetText():find("9 / 9") and SB.button:GetText() == "Rescan" and M.LogHas("talent trees saved: 9 of 9"), "all trees saved, button turns into Rescan")
+M.inCombat = true
+SB.button:GetScript("OnClick")(SB.button)
+check(M.LogHas("can't read talent trees in combat"), "no scanning in combat")
+M.inCombat = false
 -- the warrior tree is saved too, for other characters
 check(AS.db.talentData.WARRIOR and AS.db.talentData.WARRIOR.source == "live", "own tree saved on login")
 function UnitClass() return "Mage", "MAGE" end

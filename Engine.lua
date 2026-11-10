@@ -464,6 +464,44 @@ local function SetupChat()
 end
 
 ------------------------------------------------------------------------------
+-- Talent tree scanning
+------------------------------------------------------------------------------
+
+-- Classes whose talent tree isn't saved yet.
+function AS.MissingTrees()
+    local missing = {}
+    for _, class in ipairs(AS.CLASSES) do
+        if not T.HasData(class) then missing[#missing + 1] = class end
+    end
+    return missing
+end
+
+-- Saves your own tree and reads every other class's tree again.
+function AS.ScanTrees()
+    if InCombatLockdown and InCombatLockdown() then
+        Print("can't read talent trees in combat - try again after the fight.")
+        return
+    end
+    T.SaveOwnTree()
+    local results = T.ScanClasses(true) or {}
+    local read = {}
+    for class, r in pairs(results) do
+        if r == true then read[#read + 1] = AS.ClassName(class) end
+    end
+    table.sort(read)
+    local missing = {}
+    for _, class in ipairs(AS.MissingTrees()) do missing[#missing + 1] = AS.ClassName(class) end
+    local total = #AS.CLASSES
+    Print(("talent trees saved: %d of %d classes."):format(total - #missing, total)
+        .. (#read > 0 and (" Read now: " .. table.concat(read, ", ") .. ".") or ""))
+    if #missing > 0 then
+        Print("still missing: " .. table.concat(missing, ", ") .. ". Log in one character of each once and they're saved for all your characters.")
+    end
+    if AS.ReloadCalculator then AS.ReloadCalculator() end
+    AS.RefreshUI()
+end
+
+------------------------------------------------------------------------------
 -- Slash commands
 ------------------------------------------------------------------------------
 
@@ -532,17 +570,7 @@ SlashCmdList["AUTOSUPERSPEC"] = function(msg)
         local b = AS.ActiveBuild()
         if b then AS.ShowBuild(b.id) else Print("not following a build.") end
     elseif cmd == "scan" then
-        T.SaveOwnTree()
-        local results = T.ScanClasses(true)
-        if not results then Print("can't read talent trees in combat.") return end
-        local ok, failed = {}, {}
-        for class, r in pairs(results) do
-            if r == true then ok[#ok + 1] = AS.ClassName(class) else failed[#failed + 1] = AS.ClassName(class) end
-        end
-        table.sort(ok); table.sort(failed)
-        Print("read talent trees: " .. (#ok > 0 and table.concat(ok, ", ") or "none")
-            .. (#failed > 0 and (". Not readable from here: " .. table.concat(failed, ", ") .. " - log in one of each once and they're saved.") or "."))
-        AS.RefreshUI()
+        AS.ScanTrees()
     elseif cmd == "debug" then
         AS.ShowCopyWindow("Auto Super Spec debug - press Ctrl+C to copy", T.DebugText())
     else
