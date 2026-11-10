@@ -51,7 +51,7 @@ for _, tree in ipairs(mageTrees) do
     end
 end
 local viewOpened = {}
-function GetNumClasses() return 11 end
+function GetNumClasses() return 9 end -- like Forever: 9 classes, but Druid's class ID is 11
 local CLASS_FILES = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "MONK", "DRUID" }
 local readable = { [801] = true } -- specs the view mode can read (mage)
 function GetClassInfo(i) return CLASS_FILES[i], CLASS_FILES[i], i end
@@ -338,7 +338,7 @@ check(C.scanButton:IsShown(), "calculator offers a scan button when the tree is 
 local SB = F.scanBox
 check(SB.title:GetText():find("Talent trees: 2 / 9") and SB.text:GetText():find("Druid") and SB.button:GetText() == "Scan talent trees", "scan box shows missing trees: " .. SB.title:GetText() .. " " .. SB.text:GetText())
 -- the druid tree becomes readable: scanning from the calculator fills it in place
-readable[1101] = true
+readable[1102] = true -- only the druid's 2nd spec has a tree
 C.scanButton:GetScript("OnClick")(C.scanButton)
 check(AS.db.talentData.DRUID and C.trees[1]:IsShown() and not C.scanButton:IsShown(), "scan from the calculator loads the tree right away")
 C.back:GetScript("OnClick")(C.back)
@@ -353,7 +353,7 @@ SB.button:GetScript("OnClick")(SB.button)
 check(M.LogHas("can't read talent trees in combat"), "no scanning in combat")
 M.inCombat = false
 -- last scan date + game version
-check(SB.last:GetText():find("^Last scan: %d%d%d%d%-%d%d%-%d%d %d%d:%d%d\nGame 1%.60%.1 %(70790%)$"), "last scan date and game version shown: " .. SB.last:GetText())
+check(SB.last:GetText():find("^Scanned %d%d %a+ %d%d%d%d, %d%d:%d%d\nGame 1%.60%.1 %(70790%)$"), "last scan date and game version shown: " .. SB.last:GetText())
 -- auto-scan every time the window opens: only missing/outdated trees
 F:Hide()
 local opened = #viewOpened

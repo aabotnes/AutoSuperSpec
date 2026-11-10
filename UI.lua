@@ -5,9 +5,9 @@ local _, AS = ...
 local T = AS.Talents
 
 local W, H = 960, 600
-local SIDEBAR_W = 178
+local SIDEBAR_W = 200
 local CARD_H, CARD_GAP, VISIBLE_CARDS = 52, 4, 5
-local CLASS_ROW_H = 34
+local CLASS_ROW_H = 32
 
 local ui
 local selectedClass
@@ -521,7 +521,7 @@ local function CreateUI()
     local scan = Panel(side, 0.5)
     scan:SetPoint("BOTTOMLEFT", 6, 6)
     scan:SetPoint("BOTTOMRIGHT", -6, 6)
-    scan:SetHeight(164)
+    scan:SetHeight(176)
     scan.title = Text(scan, "GameFontNormal")
     scan.title:SetPoint("TOPLEFT", 8, -8)
     scan.title:SetPoint("RIGHT", -8, 0)
@@ -533,13 +533,19 @@ local function CreateUI()
     scan.text:SetWordWrap(true)
     scan.button = Button(scan, "Scan talent trees", SIDEBAR_W - 28, 26, function() AS.ScanTrees() end)
     scan.button:SetPoint("BOTTOM", 0, 8)
-    scan.auto = Check(scan, "Auto-scan when opened",
+    scan.auto = Check(scan, "Auto-scan on open",
         "Every time you open this window, read the talent trees of classes that are missing or were saved on an older game version.",
         function(self) AS.db.autoScan = self:GetChecked() and true or false end)
-    scan.auto:SetPoint("BOTTOMLEFT", 6, 38)
+    scan.auto:SetPoint("BOTTOMLEFT", 8, 40)
     scan.last = Text(scan, "GameFontDisableSmall")
-    scan.last:SetPoint("BOTTOMLEFT", 10, 64)
+    scan.last:SetPoint("BOTTOMLEFT", 10, 70)
     scan.last:SetPoint("RIGHT", -8, 0)
+    scan.last:SetSpacing(2)
+    local rule = scan:CreateTexture(nil, "ARTWORK")
+    rule:SetColorTexture(1, 1, 1, 0.1)
+    rule:SetHeight(1)
+    rule:SetPoint("BOTTOMLEFT", scan.last, "TOPLEFT", -2, 6)
+    rule:SetPoint("RIGHT", scan, "RIGHT", -8, 0)
     scan.last:SetJustifyH("LEFT")
     scan.button:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -740,7 +746,7 @@ function AS.RefreshUI()
         sb.button:SetText("Rescan")
     end
     local ls = AS.db.lastScan
-    sb.last:SetText(ls and ("Last scan: %s\nGame %s (%s)"):format(date("%Y-%m-%d %H:%M", ls.time), tostring(ls.version), tostring(ls.build))
+    sb.last:SetText(ls and ("Scanned %s\nGame %s (%s)"):format(date("%d %b %Y, %H:%M", ls.time), tostring(ls.version), tostring(ls.build))
         or "Not scanned yet")
     sb.auto:SetChecked(AS.db.autoScan ~= false)
 
@@ -751,7 +757,7 @@ function AS.RefreshUI()
     ui.newBuild:SetEnabled(layout ~= nil)
     local cname = AS.ClassName(selectedClass)
     if own then
-        ui.headerSub:SetText("Shared by all your characters, activated per character.  Shift-click a build to link it in chat.")
+        ui.headerSub:SetText("Saved for all your characters  ·  activated per character  ·  shift-click a build to link it in chat")
     elseif layout then
         ui.headerSub:SetText(("View, edit and share %s builds here. Log in a %s to learn them."):format(cname, cname))
     else

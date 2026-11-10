@@ -560,9 +560,10 @@ end
 
 local function ClassID(class)
     if type(GetNumClasses) ~= "function" or type(GetClassInfo) ~= "function" then return nil end
-    for id = 1, (GetNumClasses() or 0) do
-        local _, file = GetClassInfo(id)
-        if file == class then return id end
+    -- class IDs can have gaps (e.g. Druid is 11), so look past the class count
+    for id = 1, math.max(GetNumClasses() or 0, 20) do
+        local ok, _, file = pcall(GetClassInfo, id)
+        if ok and file == class then return id end
     end
 end
 
@@ -573,10 +574,15 @@ function Talents.ReadClassTree(class)
     end
     local classID = ClassID(class)
     if not classID then return nil, "unknown class" end
-    local specID = Try(GetSpecializationInfoForClassID, classID, 1)
-    if not specID then return nil, "no specialization found for the class" end
-    local treeID = Try(C_ClassTalents.GetTraitTreeForSpec, specID)
-    if not treeID then return nil, "no talent tree found for the class" end
+    -- the first spec that has a talent tree
+    local specID, treeID
+    local count = Try(C_SpecializationInfo and C_SpecializationInfo.GetNumSpecializationsForClassID, classID) or 0
+    for index = 1, math.max(count, 4) do
+        local id = Try(GetSpecializationInfoForClassID, classID, index)
+        local tree = id and Try(C_ClassTalents.GetTraitTreeForSpec, id)
+        if tree then specID, treeID = id, tree; break end
+    end
+    if not specID then return nil, "no talent tree found for the class" end
     if not pcall(C_ClassTalents.InitializeViewLoadout, specID, AS.MaxPoints() + 9) then
         return nil, "the game refused to open the talent view"
     end
