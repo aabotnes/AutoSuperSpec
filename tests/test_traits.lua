@@ -124,6 +124,20 @@ C_Traits = {
     CommitConfig = function() return false end,
     GetTraitDescription = function(eid, rank) return nodes[eid / 10].name .. " rank " .. rank .. " text" end,
 }
+local buildNumber = "70790"
+function GetBuildInfo() return "1.60.1", buildNumber, "Nov 3 2026", 16001 end
+C_TooltipInfo = {
+    GetTraitEntry = function(eid, rank)
+        local n = nodes[eid / 10]
+        return { lines = {
+            { leftText = n.name },
+            { leftText = ("Rank %d/%d"):format(rank, n.max) },
+            { leftText = "20 Rage", rightText = "Melee Range" },
+            { leftText = "Instant", rightText = "6 sec cooldown" },
+            { leftText = n.name .. " rank " .. rank .. " full text", leftColor = { r = 1, g = 0.82, b = 0 }, wrapText = true },
+        } }
+    end,
+}
 C_Spell = {
     GetSpellName = function(sid) return nodes[sid / 10].name end,
     GetSpellTexture = function() return 136000 end,
@@ -239,7 +253,14 @@ check(anti.rank:GetText() == "5/5" and anti.step:GetText() == 1, "Anticipation 5
 check(btn(1, "Improved Heroic Strike").rank:GetText() == "0/3", "untaken talent shows 0/3")
 anti:GetScript("OnEnter")(anti)
 local tip = table.concat(M.tipLines, "|")
-check(tip:find("Rank 5/5", 1, true) and tip:find("Anticipation rank 5 text", 1, true), "tooltip shows rank and the game's description: " .. tip)
+check(tip:find("Rank 5/5", 1, true) and tip:find("20 Rage || Melee Range", 1, true) and tip:find("Instant || 6 sec cooldown", 1, true)
+    and tip:find("Anticipation rank 5 full text", 1, true), "tooltip shows the game's full talent tooltip (cost, range, cooldown, text): " .. tip)
+local _, dupes = tip:gsub("Rank %d/5", "")
+check(dupes == 1, "the game's own rank line isn't repeated")
+local row = C.order.rows[2]
+row:GetScript("OnEnter")(row)
+tip = table.concat(M.tipLines, "|")
+check(tip:find("Rank 2/5", 1, true) and tip:find("Anticipation rank 2 full text", 1, true) and tip:find("Right-click to remove this point", 1, true), "learning-order rows show the talent at that point's rank: " .. tip)
 check(C.order.rows[1].level:GetText() == "Lvl 10" and C.order.rows[1].text:GetText():find("Anticipation  1/5"), "order list row 1")
 check(#C.trees[3].lines > 0 and C.trees[3].lines[1]:IsShown(), "prerequisite arrow drawn")
 -- edit: can't break the prerequisite
@@ -296,7 +317,8 @@ local focus
 for _, x in ipairs(C.trees[1].buttons) do if x.talent and x.talent.name == "Arcane Focus" then focus = x end end
 check(focus.rank:GetText() == "5/5", "mage build ranks shown (Arcane Focus maxed using the real max rank)")
 focus:GetScript("OnEnter")(focus)
-check(table.concat(M.tipLines, "|"):find("Arcane Focus rank 5 text", 1, true), "mage tooltip uses saved talent text")
+check(table.concat(M.tipLines, "|"):find("Arcane Focus rank 5 full text", 1, true) and table.concat(M.tipLines, "|"):find("6 sec cooldown", 1, true), "mage tooltip shows the saved full tooltip on a warrior")
+check(AS.db.talentData.MAGE.trees[1][2].tips[3][3].r == "Melee Range", "full tooltip lines saved for every rank")
 local missiles
 for _, x in ipairs(C.trees[1].buttons) do if x.talent and x.talent.name == "Improved Arcane Missiles" then missiles = x end end
 missiles:GetScript("OnClick")(missiles, "LeftButton")
@@ -330,6 +352,28 @@ M.inCombat = true
 SB.button:GetScript("OnClick")(SB.button)
 check(M.LogHas("can't read talent trees in combat"), "no scanning in combat")
 M.inCombat = false
+-- last scan date + game version
+check(SB.last:GetText():find("^Last scan: %d%d%d%d%-%d%d%-%d%d %d%d:%d%d\nGame 1%.60%.1 %(70790%)$"), "last scan date and game version shown: " .. SB.last:GetText())
+-- auto-scan every time the window opens: only missing/outdated trees
+F:Hide()
+local opened = #viewOpened
+AS.ShowUI()
+check(#viewOpened == opened and SB.auto:GetChecked(), "auto-scan on open skips trees that are up to date")
+F:Hide()
+buildNumber = "70800" -- game update
+AS.ShowUI()
+check(#viewOpened > opened and AS.db.talentData.MAGE.build == "70800" and SB.last:GetText():find("70800"), "after a game update, opening the window re-reads the trees")
+F:Hide()
+SB.auto:SetChecked(false)
+SB.auto:GetScript("OnClick")(SB.auto)
+check(AS.db.autoScan == false, "auto-scan can be turned off")
+buildNumber = "70900"
+opened = #viewOpened
+AS.ShowUI()
+check(#viewOpened == opened, "with auto-scan off, opening the window doesn't scan")
+SB.auto:SetChecked(true)
+SB.auto:GetScript("OnClick")(SB.auto)
+buildNumber = "70790"
 -- the warrior tree is saved too, for other characters
 check(AS.db.talentData.WARRIOR and AS.db.talentData.WARRIOR.source == "live", "own tree saved on login")
 function UnitClass() return "Mage", "MAGE" end

@@ -79,6 +79,8 @@ UIParent = NewWidget()
 GameTooltip = NewWidget()
 local tipLines = {}
 GameTooltip.AddLine = function(_, t) tipLines[#tipLines + 1] = tostring(t) end
+GameTooltip.AddDoubleLine = function(_, l, r) tipLines[#tipLines + 1] = tostring(l) .. " || " .. tostring(r) end
+time, date = os.time, os.date
 GameTooltip.SetOwner = function() for k in pairs(tipLines) do tipLines[k] = nil end end
 M.tipLines = tipLines
 Minimap = NewWidget()

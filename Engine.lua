@@ -476,6 +476,12 @@ function AS.MissingTrees()
     return missing
 end
 
+-- Quietly reads missing or outdated trees (when the window opens).
+function AS.AutoScan()
+    if AS.db.autoScan == false or (InCombatLockdown and InCombatLockdown()) then return end
+    pcall(T.ScanClasses)
+end
+
 -- Saves your own tree and reads every other class's tree again.
 function AS.ScanTrees()
     if InCombatLockdown and InCombatLockdown() then
@@ -615,6 +621,7 @@ f:SetScript("OnEvent", function(self, event, arg1, arg2)
         if arg1 ~= ADDON_NAME then return end
         AutoSuperSpecDB = AutoSuperSpecDB or {}
         AutoSuperSpecDB.builds = AutoSuperSpecDB.builds or {}
+        if AutoSuperSpecDB.autoScan == nil then AutoSuperSpecDB.autoScan = true end
         AutoSuperSpecCharDB = AutoSuperSpecCharDB or {}
         if AutoSuperSpecCharDB.enabled == nil then AutoSuperSpecCharDB.enabled = true end
         AutoSuperSpecCharDB.mode = AutoSuperSpecCharDB.mode or "auto"

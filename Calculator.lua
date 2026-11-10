@@ -198,29 +198,59 @@ end
 -- Tooltip
 ------------------------------------------------------------------------------
 
-local function TalentTooltip(btn)
-    local t = btn.talent
-    if not t then return end
+local function RGB(hex, r, g, b)
+    if type(hex) == "string" and #hex == 6 then
+        return tonumber(hex:sub(1, 2), 16) / 255, tonumber(hex:sub(3, 4), 16) / 255, tonumber(hex:sub(5, 6), 16) / 255
+    end
+    return r, g, b
+end
+
+-- The game's own tooltip text for a talent at a rank: costs, range, cast time,
+-- cooldown and the description. Skips the name and rank lines (shown above).
+local function AddGameLines(t, rank)
+    local lines = T.TooltipLines(t, rank)
+    if not lines then
+        local desc = T.Description(t, rank)
+        if desc then GameTooltip:AddLine(desc, 1, 0.82, 0, true) end
+        return
+    end
+    for i, ln in ipairs(lines) do
+        local skip = (i == 1 and ln.l == t.name) or (not ln.r and ln.l and ln.l:match("^Rank %d+/%d+$"))
+        if not skip then
+            local lr, lg, lb = RGB(ln.lc, 1, 0.82, 0)
+            if ln.r then
+                local rr, rg, rb = RGB(ln.rc, 1, 1, 1)
+                GameTooltip:AddDoubleLine(ln.l or "", ln.r, lr, lg, lb, rr, rg, rb)
+            elseif ln.l then
+                GameTooltip:AddLine(ln.l, lr, lg, lb, ln.w ~= false and #ln.l > 30)
+            end
+        end
+    end
+end
+
+-- Full talent tooltip. rank: the rank to describe (the build's rank, or the
+-- rank a learning-order row reaches). footer: optional hint lines.
+local function ShowTalentTooltip(owner, anchor, t, rank, footer)
     local cur = Current()
-    local rank = cur and cur.counts[t.key] or 0
-    GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+    GameTooltip:SetOwner(owner, anchor)
     GameTooltip:AddLine(t.name, 1, 1, 1)
     GameTooltip:AddLine(("Rank %d/%d"):format(rank, t.maxRank), 1, 1, 1)
-    if cur and rank < t.maxRank then
+    if cur and (cur.counts[t.key] or 0) < t.maxRank then
         local ok, why = CanAdd(t, cur)
         if not ok and why then GameTooltip:AddLine(why, 1, 0.1, 0.1, true) end
     end
-    local desc = T.Description(t, math.max(1, rank))
-    if desc then GameTooltip:AddLine(desc, 1, 0.82, 0, true) end
+    AddGameLines(t, math.max(1, rank))
     if rank > 0 and rank < t.maxRank then
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine("Next rank:", 1, 1, 1)
         local nextDesc = T.Description(t, rank + 1)
         if nextDesc then
-            GameTooltip:AddLine(" ")
-            GameTooltip:AddLine("Next rank:", 1, 1, 1)
             GameTooltip:AddLine(nextDesc, 1, 0.82, 0, true)
+        else
+            AddGameLines(t, rank + 1)
         end
     end
-    if cur and rank > 0 then
+    if cur and (cur.counts[t.key] or 0) > 0 then
         local levels = {}
         for i, s in ipairs(cur.steps) do
             if s.key == t.key then levels[#levels + 1] = FIRST_LEVEL + i - 1 end
@@ -228,13 +258,21 @@ local function TalentTooltip(btn)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine("Learned at level " .. table.concat(levels, ", "), 0.5, 0.8, 1, true)
     end
-    if calc.editable then
+    if footer and calc.editable then
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Left-click: add a point   Right-click: remove a point", 0.5, 0.5, 0.5, true)
+        GameTooltip:AddLine(footer, 0.5, 0.5, 0.5, true)
     end
     GameTooltip:Show()
     calc.hoverKey = t.key
     AS.RefreshCalculatorHighlight()
+end
+
+local function TalentTooltip(btn)
+    local t = btn.talent
+    if not t then return end
+    local cur = Current()
+    ShowTalentTooltip(btn, "ANCHOR_RIGHT", t, cur and cur.counts[t.key] or 0,
+        "Left-click: add a point   Right-click: remove a point")
 end
 
 ------------------------------------------------------------------------------
@@ -302,10 +340,8 @@ local function CreateOrderRow(parent)
     r:SetScript("OnEnter", function(self)
         calc.hoverKey = self.key
         AS.RefreshCalculatorHighlight()
-        if self.key and calc.editable then
-            GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-            GameTooltip:AddLine("Right-click to remove this point", 0.7, 0.7, 0.7)
-            GameTooltip:Show()
+        if self.talent then
+            ShowTalentTooltip(self, "ANCHOR_LEFT", self.talent, self.pointRank or 1, "Right-click to remove this point")
         end
     end)
     r:SetScript("OnLeave", function()
@@ -620,15 +656,16 @@ local function DrawOrder(steps, raw)
         if t then
             r.level:SetText("Lvl " .. (FIRST_LEVEL + idx - 1))
             if raw then
-                r.key, r.index = nil, nil
+                r.key, r.index, r.talent = nil, nil, nil
                 r.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
                 r.text:SetText(("Tree %d, talent %s%s"):format(t.tree or 0, AS.POS:sub(t.pos, t.pos), t.maxed and " (max)" or ""))
                 r.text:SetTextColor(0.8, 0.8, 0.8)
             else
-                r.key, r.index = t.key, idx
+                r.key, r.index, r.talent = t.key, idx, t
                 U.SetIcon(r.icon, t.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
                 local n = 0
                 for k = 1, idx do if steps[k].key == t.key then n = n + 1 end end
+                r.pointRank = n
                 r.text:SetText(("%s  %d/%d"):format(t.name, n, t.maxRank))
                 if have[idx] then
                     r.text:SetTextColor(0.35, 1, 0.35)
@@ -647,7 +684,7 @@ local function DrawOrder(steps, raw)
             end
             r:Show()
         else
-            r.key, r.index = nil, nil
+            r.key, r.index, r.talent = nil, nil, nil
             r:Hide()
         end
     end

@@ -44,12 +44,12 @@ Click a build, or **New build**, to open it in the talent calculator. It opens i
 - The small number in a talent's top-left corner is the point where the build starts that talent. In the screenshot, Shield Specialization at the top of Protection is point **1**: it's the first talent this build learns.
 - Lines between talents are prerequisites. They turn gold once the required talent is maxed.
 - Each tree's header shows its points in the build (here *Arms 4, Fury 15, Protection 32*). **Clear** empties that tree.
-- Hover a talent to see the game's own description for its current and next rank, what it still requires, and the levels you learn it at.
+- Hover a talent to see its full in-game tooltip: resource cost, range, cast time, cooldown and description, for its rank in the build. You also see the next rank's text, what it still requires, and the levels you learn it at. This works for every class with a saved tree, even on another character.
 
 **Reading the learning order (right)**
 - One row per talent point, with the level you get it at: the first point at level 10, then one per level.
 - **Green** rows are points you've already learned. The **gold** highlighted row is the next point this character will learn (here *Improved Revenge 3/3* at level 17). White rows are still to come.
-- Hover a row to highlight its talent in the tree. Scroll with the mouse wheel.
+- Hover a row to highlight its talent in the tree and see its full tooltip at the rank that point gives you. Scroll with the mouse wheel.
 
 **Editing**
 - Left-click a talent to add a point, right-click to remove one. The order you add points in becomes the learning order. Right-click a row in the order list to remove that exact point.
@@ -66,9 +66,10 @@ Click a build, or **New build**, to open it in the talent calculator. It opens i
 The talent data comes straight from the game, so it always matches your client. There's no website and nothing to update by hand.
 
 - **Your own class:** read live, every time.
-- **Other classes:** the first time you open the window each session, the addon tries to read every class's tree through the game's "view a talent link" mode, like when you open someone else's talent link. If that works, you see every class's full tree right away.
+- **Other classes:** every time you open the window, the addon reads any class tree that's missing or was saved on an older game version. It uses the game's "view a talent link" mode, like when you open someone else's talent link. If that works, you see every class's full tree right away. Trees that are already up to date are skipped, so opening the window stays instant. Turn this off with **Auto-scan when opened** in the scan box.
+- **Everything is saved:** each talent's full tooltip at every rank (costs, range, cast time, cooldown, description), its icon, position and prerequisites. That's how other classes' talents show their stats on any character.
 - **Fallback:** each time you log in, your character's tree is saved for your whole account. So even if the game doesn't allow the view mode, logging in one character of each class once makes every tree available on all your characters.
-- Saved trees are tagged with the game version and read again after a game update.
+- Saved trees are tagged with the game version and read again after a game update. The scan box shows when the last scan ran and which game version it read, e.g. *Last scan: 2026-11-10 18:48 · Game 1.60.1 (70790)*.
 - A class with no saved tree yet still shows its builds' learning order, plus a note to log in that class once.
 - **Scan talent trees** (bottom of the class list) shows how many classes have a saved tree. While any are missing, the box turns amber, lists the missing classes, and offers a big **Scan talent trees** button. Once every class is saved, it becomes a **Rescan** button, so you can scan again any time. Classes without a saved tree have a dimmed icon, and the calculator shows the same scan button when you open a build whose tree is missing. `/ass scan` does the same from chat.
 

@@ -397,11 +397,66 @@ end
 -- client build, so it's re-read after a game update.
 
 local VIEW_CONFIG_ID = (Constants and Constants.TraitConsts and Constants.TraitConsts.VIEW_TRAIT_CONFIG_ID) or -3
+local DATA_FORMAT = 2 -- 2: full tooltip lines per rank
 local memo = {}
 
 local function ClientBuild()
     local _, build = GetBuildInfo()
     return tostring(build)
+end
+
+local function ClientVersion()
+    local version = GetBuildInfo()
+    return tostring(version)
+end
+
+------------------------------------------------------------------------------
+-- Full talent tooltips (costs, range, cast time, cooldown, description)
+------------------------------------------------------------------------------
+
+local function Hex(c)
+    if type(c) == "table" and type(c.r) == "number" then
+        return ("%02x%02x%02x"):format(c.r * 255, c.g * 255, c.b * 255)
+    end
+end
+
+local function Secret(v)
+    return issecretvalue and v ~= nil and issecretvalue(v)
+end
+
+-- TooltipData -> plain lines we can save: { l = left, r = right, lc/rc = colors, w = wrap }
+local function TooltipLines(data)
+    if type(data) ~= "table" or type(data.lines) ~= "table" then return nil end
+    local out = {}
+    for _, line in ipairs(data.lines) do
+        local left, right = line.leftText, line.rightText
+        if (left == nil and right == nil) and type(line.args) == "table" then -- older tooltip data format
+            for _, arg in ipairs(line.args) do
+                if arg.field == "leftText" then left = arg.stringVal end
+                if arg.field == "rightText" then right = arg.stringVal end
+            end
+        end
+        if Secret(left) or Secret(right) then return nil end
+        if type(left) ~= "string" then left = nil end
+        if type(right) ~= "string" or right == "" then right = nil end
+        if (left and left ~= "") or right then
+            out[#out + 1] = { l = left, r = right, lc = Hex(line.leftColor), rc = Hex(line.rightColor), w = line.wrapText }
+        end
+    end
+    return #out > 0 and out or nil
+end
+
+-- The game's own tooltip for a talent at a rank, as saved lines.
+function Talents.TooltipLines(t, rank)
+    if t.tips then return t.tips[rank] end
+    local lines
+    if t.entryID and C_TooltipInfo and C_TooltipInfo.GetTraitEntry then
+        lines = TooltipLines(Try(C_TooltipInfo.GetTraitEntry, t.entryID, rank))
+    end
+    if not lines and t.spellID and C_TooltipInfo and C_TooltipInfo.GetSpellByID then
+        lines = TooltipLines(Try(C_TooltipInfo.GetSpellByID, t.spellID))
+    end
+    return lines
 end
 
 local function Saved(class)
@@ -415,20 +470,26 @@ local function Store(class, data)
 end
 
 local function Serialize(layout, meta, source)
-    local data = { build = ClientBuild(), source = source, names = meta.names or {}, icons = meta.icons or {}, trees = {} }
+    local data = {
+        build = ClientBuild(), version = ClientVersion(), time = time(), format = DATA_FORMAT,
+        source = source, names = meta.names or {}, icons = meta.icons or {}, trees = {},
+    }
     for i, list in ipairs(layout) do
         local out = {}
         for _, t in ipairs(list) do
             local req = {}
             for _, pre in ipairs(t.requires or {}) do req[#req + 1] = pre.key end
-            local desc
+            local desc, tips
             if t.entryID or t.spellID then
-                desc = {}
-                for r = 1, t.maxRank do desc[r] = Talents.Description(t, r) end
+                desc, tips = {}, {}
+                for r = 1, t.maxRank do
+                    desc[r] = Talents.Description(t, r)
+                    tips[r] = Talents.TooltipLines(t, r)
+                end
             end
             out[#out + 1] = {
                 key = t.key, name = t.name, icon = t.icon, maxRank = t.maxRank, x = t.x, y = t.y,
-                entryID = t.entryID, spellID = t.spellID, req = req, desc = desc,
+                entryID = t.entryID, spellID = t.spellID, req = req, desc = desc, tips = tips,
             }
         end
         data.trees[i] = out
@@ -443,7 +504,7 @@ local function Deserialize(data)
         for _, d in ipairs(list) do
             local t = {
                 key = d.key, name = d.name, icon = d.icon, maxRank = d.maxRank, x = d.x, y = d.y,
-                entryID = d.entryID, spellID = d.spellID, desc = d.desc, req = d.req, rank = 0, requires = {},
+                entryID = d.entryID, spellID = d.spellID, desc = d.desc, tips = d.tips, req = d.req, rank = 0, requires = {},
             }
             tree[#tree + 1] = t
             byKey[t.key] = t
@@ -523,13 +584,15 @@ function Talents.ReadClassTree(class)
     return ReadTree(VIEW_CONFIG_ID, treeID)
 end
 
--- Fills in classes that are missing (or saved on an older game build).
+-- Reads the trees of classes that are missing or outdated (saved on another
+-- game build or in an older format). force: read every class again.
 function Talents.ScanClasses(force)
     if InCombatLockdown and InCombatLockdown() then return nil end
     local results, build, mine = {}, ClientBuild(), AS.PlayerClass()
     for _, class in ipairs(AS.CLASSES) do
         local have = Saved(class)
-        if class ~= mine and (force or not have or (have.build ~= build and have.source ~= "live")) then
+        local outdated = not have or have.build ~= build or (have.format or 1) < DATA_FORMAT
+        if class ~= mine and (force or outdated) then
             local layout, meta = Talents.ReadClassTree(class)
             if layout then
                 Store(class, Serialize(layout, meta, "view"))
@@ -540,6 +603,7 @@ function Talents.ScanClasses(force)
         end
     end
     Talents.lastScan = results
+    AS.db.lastScan = { time = time(), version = ClientVersion(), build = build }
     return results
 end
 
@@ -574,6 +638,8 @@ function Talents.DebugText()
     add(("Auto Super Spec debug - client %s.%s, interface %s, backend %s"):format(tostring(version), tostring(build), tostring(toc), Talents.Name()))
     local _, class = UnitClass("player")
     add(("class %s, level %s, unspent %s"):format(tostring(class), tostring(UnitLevel("player")), tostring(Talents.Unspent())))
+    local ls = AS.db and AS.db.lastScan
+    add("last scan: " .. (ls and (date("%Y-%m-%d %H:%M", ls.time) .. " on " .. tostring(ls.version) .. " (" .. tostring(ls.build) .. ")") or "never"))
     for _, class in ipairs(AS.CLASSES) do
         local d = Saved(class)
         local scan = Talents.lastScan and Talents.lastScan[class]

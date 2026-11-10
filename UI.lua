@@ -521,7 +521,7 @@ local function CreateUI()
     local scan = Panel(side, 0.5)
     scan:SetPoint("BOTTOMLEFT", 6, 6)
     scan:SetPoint("BOTTOMRIGHT", -6, 6)
-    scan:SetHeight(104)
+    scan:SetHeight(164)
     scan.title = Text(scan, "GameFontNormal")
     scan.title:SetPoint("TOPLEFT", 8, -8)
     scan.title:SetPoint("RIGHT", -8, 0)
@@ -533,6 +533,14 @@ local function CreateUI()
     scan.text:SetWordWrap(true)
     scan.button = Button(scan, "Scan talent trees", SIDEBAR_W - 28, 26, function() AS.ScanTrees() end)
     scan.button:SetPoint("BOTTOM", 0, 8)
+    scan.auto = Check(scan, "Auto-scan when opened",
+        "Every time you open this window, read the talent trees of classes that are missing or were saved on an older game version.",
+        function(self) AS.db.autoScan = self:GetChecked() and true or false end)
+    scan.auto:SetPoint("BOTTOMLEFT", 6, 38)
+    scan.last = Text(scan, "GameFontDisableSmall")
+    scan.last:SetPoint("BOTTOMLEFT", 10, 64)
+    scan.last:SetPoint("RIGHT", -8, 0)
+    scan.last:SetJustifyH("LEFT")
     scan.button:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine("Scan talent trees", 1, 1, 1)
@@ -731,6 +739,10 @@ function AS.RefreshUI()
         sb.text:SetText("All classes saved.")
         sb.button:SetText("Rescan")
     end
+    local ls = AS.db.lastScan
+    sb.last:SetText(ls and ("Last scan: %s\nGame %s (%s)"):format(date("%Y-%m-%d %H:%M", ls.time), tostring(ls.version), tostring(ls.build))
+        or "Not scanned yet")
+    sb.auto:SetChecked(AS.db.autoScan ~= false)
 
     -- header
     SetClassIcon(ui.headerIcon, selectedClass)
@@ -816,6 +828,7 @@ end
 
 function AS.ShowPage(page)
     if not ui then CreateUI() end
+    if not ui:IsShown() then AS.AutoScan() end -- the window is opening
     FitToScreen()
     ui.page = page
     ui.listPage:SetShown(page == "list")
@@ -827,14 +840,8 @@ end
 
 function AS.GetSelectedClass() return selectedClass end
 
-local scanned = false
-
 function AS.ShowUI(class)
     if not ui then CreateUI() end
-    if not scanned and not (InCombatLockdown and InCombatLockdown()) then
-        scanned = true
-        pcall(T.ScanClasses)
-    end
     if class then selectedClass = class; ui.offset = 0 end
     AS.ShowPage("list")
 end
