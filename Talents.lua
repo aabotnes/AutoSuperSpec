@@ -649,7 +649,10 @@ function Talents.DebugText()
     for _, class in ipairs(AS.CLASSES) do
         local d = Saved(class)
         local scan = Talents.lastScan and Talents.lastScan[class]
-        add(("saved %s: %s%s"):format(class, d and (d.source .. " on build " .. tostring(d.build)) or "none",
+        local sizes = {}
+        for i, tree in ipairs(d and d.trees or {}) do sizes[i] = #tree end
+        add(("saved %s: %s%s%s"):format(class, d and (d.source .. " on build " .. tostring(d.build)) or "none",
+            #sizes > 0 and (", talents per tree " .. table.concat(sizes, "/")) or "",
             scan ~= nil and (" (last view read: " .. tostring(scan) .. ")") or ""))
     end
     local layout, meta = Talents.Layout()

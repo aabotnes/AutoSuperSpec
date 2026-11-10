@@ -4,16 +4,21 @@
 --   digit 0/1/2  -> switch to talent tree 1/2/3
 --   lowercase    -> one point in the talent at that position of the tree
 --   UPPERCASE    -> put points into that talent until it is maxed
--- Positions are lettered "abcdefghjkmnpqrstvw" (no i, l, o, u) and count a tree's
--- talents top to bottom, left to right. Auto Super Spec maps them onto the in-game
--- talents at run time, so it follows whatever trees the game has.
+-- Positions are lettered "abcdefghjkmnpqrstvwz" (no i, l, o, u, x, y: talent #20
+-- is "z") and count a tree's talents top to bottom, left to right. Auto Super
+-- Spec maps them onto the in-game talents at run time, so it follows whatever
+-- trees the game has. For Wowhead links it maps letters to positions from the
+-- link's own rank digits (see AS.MapLetters), so an unexpected letter can't
+-- break an import.
 
 local ADDON_NAME, AS = ...
 _G.AutoSuperSpec = AS
 AS.name = ADDON_NAME
 AS.TITLE = "|cffc27dff[Soeta's]|r |cff33ff99Auto Super Spec|r"
 
-AS.POS = "abcdefghjkmnpqrstvwxyz"
+-- Wowhead's letters for talent positions 1-20; "x" and "y" are only our own
+-- extension for trees with more than 20 talents.
+AS.POS = "abcdefghjkmnpqrstvwzxy"
 AS.MAX_NAME = 40
 AS.CLASSES = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" }
 
@@ -120,6 +125,47 @@ function AS.ResolveSteps(code, layout)
     return steps
 end
 
+-- Maps a Wowhead order's letters to talent positions using the link's rank
+-- digits: Wowhead's letters go up alphabetically with the position, so the
+-- n-th distinct letter used in a tree is the n-th talent with points. Every
+-- letter's point count is checked against its digit. Returns
+-- map[tree][letter] = position, or nil if the digits don't fit.
+function AS.MapLetters(order, ranks)
+    if not ranks then return nil end
+    local used, tree = {}, nil
+    for i = 1, #order do
+        local c = order:sub(i, i)
+        if c:match("%d") then
+            tree = tonumber(c) + 1
+        elseif tree and c:match("%a") then
+            local l = c:lower()
+            used[tree] = used[tree] or {}
+            local e = used[tree][l] or { n = 0 }
+            used[tree][l] = e
+            if c ~= l then e.max = true else e.n = e.n + 1 end
+        end
+    end
+    local map = {}
+    for t, set in pairs(used) do
+        local digits = ranks[t]
+        if type(digits) ~= "table" then return nil end
+        local letters, positions = {}, {}
+        for l in pairs(set) do letters[#letters + 1] = l end
+        table.sort(letters)
+        for p, r in ipairs(digits) do
+            if r > 0 then positions[#positions + 1] = p end
+        end
+        if #letters ~= #positions then return nil end
+        map[t] = {}
+        for i, l in ipairs(letters) do
+            local p, e = positions[i], set[l]
+            if (e.max and e.n > digits[p]) or (not e.max and e.n ~= digits[p]) then return nil end
+            map[t][l] = p
+        end
+    end
+    return map
+end
+
 -- Rewrites a Wowhead order into Auto Super Spec's form: one letter per point. UPPERCASE
 -- "max it" letters are expanded with the in-game max rank when the build is for
 -- your own class, or with the rank numbers in the Wowhead link otherwise.
@@ -127,12 +173,13 @@ end
 function AS.Canonicalize(order, ranks, layout)
     local out, counts, perTree = {}, {}, {}
     local tree, lastTree, points, unknown = nil, nil, 0, false
+    local map = AS.MapLetters(order, ranks)
     for i = 1, #order do
         local c = order:sub(i, i)
         if c:match("%d") then
             tree = tonumber(c) + 1
         else
-            local p = AS.POS:find(c:lower(), 1, true)
+            local p = map and map[tree] and map[tree][c:lower()] or AS.POS:find(c:lower(), 1, true)
             if not p or not tree then
                 return nil, "the talent order in that link is damaged (unexpected '" .. c .. "')."
             end
@@ -151,13 +198,15 @@ function AS.Canonicalize(order, ranks, layout)
                 end
                 n = maxRank and math.max(0, maxRank - (counts[key] or 0)) or nil
             end
+            local letter = AS.POS:sub(p, p)
+            if letter == "" then return nil, "that tree has more talents than Auto Super Spec can store." end
             if n then
-                out[#out + 1] = c:lower():rep(n)
+                out[#out + 1] = letter:rep(n)
                 counts[key] = (counts[key] or 0) + n
                 points = points + n
                 perTree[tree] = (perTree[tree] or 0) + n
             else
-                out[#out + 1] = c -- keep "max it", resolved in game later
+                out[#out + 1] = letter:upper() -- keep "max it", resolved in game later
                 unknown = true
             end
         end
