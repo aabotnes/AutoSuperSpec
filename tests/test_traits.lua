@@ -144,7 +144,7 @@ C_Spell = {
 }
 
 local DIR = arg[1]
-local AS = M.Load(DIR, { "Core.lua", "Talents.lua", "Engine.lua", "UI.lua", "Calculator.lua", "Minimap.lua" })
+local AS = M.Load(DIR, { "Core.lua", "Talents.lua", "Engine.lua", "UI.lua", "Calculator.lua", "Minimap.lua", "TalentWindow.lua" })
 check(AS.Talents.Name() == "traits", "uses the trait backend")
 M.Fire("PLAYER_ENTERING_WORLD")
 M.Advance(6)
@@ -447,6 +447,37 @@ card:GetScript("OnClick")(card, "LeftButton")
 check(typing._text:find("^look at this: %[Auto Super Spec: "), "shift-click links into the active chat input: " .. typing._text)
 function IsShiftKeyDown() return false end
 ChatEdit_GetActiveWindow = nil
+
+-- the game's talent window: next-talent highlight + open button
+local talentButtons = {}
+PlayerSpellsFrame = CreateFrame("Frame", "PlayerSpellsFrame")
+local TF = CreateFrame("Frame")
+PlayerSpellsFrame.TalentsFrame = TF
+TF.GetConfigID = function() return 1 end
+TF.GetTalentButtonByNodeID = function(_, nid)
+    talentButtons[nid] = talentButtons[nid] or CreateFrame("Button")
+    talentButtons[nid]:Show()
+    return talentButtons[nid]
+end
+M.Fire("ADDON_LOADED", "Blizzard_PlayerSpells")
+check(AutoSuperSpecTalentWindowButton ~= nil, "talent window gets an Auto Super Spec button")
+AS.SetActive(b.id, true)
+PlayerSpellsFrame:Show(); TF:Show()
+AS.UpdateTalentWindow()
+local nxt = AS.Progress(b).next
+local ov
+for _, fr in ipairs(M.frames) do if rawget(fr, "tag") then ov = fr end end
+check(ov and ov:IsShown() and ov.tag.text:GetText() == ("NEXT  ·  Lvl %d  ·  %d/%d"):format(9 + nxt.step, nxt.rank, nxt.t.maxRank), "next talent highlighted in the talent window: " .. tostring(ov and ov.tag.text:GetText()))
+TF.GetConfigID = function() return 99 end -- viewing someone else's talent link
+AS.UpdateTalentWindow()
+check(not ov:IsShown(), "no highlight while viewing another loadout")
+TF.GetConfigID = function() return 1 end
+AS.SetActive(nil, true)
+AS.UpdateTalentWindow()
+check(not ov:IsShown(), "no highlight without an active build")
+F:Hide()
+AutoSuperSpecTalentWindowButton:GetScript("OnClick")(AutoSuperSpecTalentWindowButton)
+check(F:IsShown(), "the button opens Auto Super Spec")
 
 -- minimap button
 local mb = AutoSuperSpecMinimapButton

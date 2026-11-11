@@ -20,6 +20,8 @@ function Widget.GetScript(self, k) return self._scripts[k] end
 function Widget.Show(self) self._shown = true end
 function Widget.Hide(self) self._shown = false end
 function Widget.IsShown(self) return self._shown end
+function Widget.IsVisible(self) return self._shown end
+function Widget.GetFrameLevel(self) return 5 end
 function Widget.SetShown(self, v) self._shown = v and true or false end
 function Widget.SetText(self, t) self._text = t end
 function Widget.GetText(self) return self._text end
@@ -34,7 +36,6 @@ function Widget.GetHeight() return 300 end
 function Widget.GetWidth() return 140 end
 function Widget.GetCenter() return 0, 0 end
 function Widget.GetEffectiveScale() return 1 end
-function Widget.GetFrameLevel() return 1 end
 function Widget.IsEnabled(self) return self._enabled ~= false end
 function Widget.SetEnabled(self, v) self._enabled = v and true or false end
 function Widget.HasFocus() return false end

@@ -32,7 +32,7 @@ function LearnTalent(t, i)
     end
 end
 
-local AS = M.Load(arg[1], { "Core.lua", "Talents.lua", "Engine.lua", "UI.lua", "Calculator.lua", "Minimap.lua" })
+local AS = M.Load(arg[1], { "Core.lua", "Talents.lua", "Engine.lua", "UI.lua", "Calculator.lua", "Minimap.lua", "TalentWindow.lua" })
 check(AS.Talents.Name() == "classic", "uses the classic backend")
 local b = AS.Import("https://www.wowhead.com/forever/talent-calc/druid/vkndmh-14-5_t0/1abbbb2A", "")
 check(b and b.code == "1abbbb2aaaaa" and b.points == 10 and b.trees == "0/5/5", "druid link: " .. tostring(b and b.code))

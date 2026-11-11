@@ -87,6 +87,11 @@ The talent data comes straight from the game, so it always matches your client. 
 - **Saved for your whole account:** builds, every class's saved talent tree, and the minimap button position. Every character can see, edit and share every build.
 - **Saved per character:** which build is active, plus **Learn on level up** and **Ask first**. Each character follows its own build.
 
+## In the game's talent window
+
+- The next talent of the build you follow gets a pulsing gold frame, with a small *NEXT · Lvl 18 · 1/5* tag above it. It only shows on your own active talents, not while you're viewing someone else's talent link.
+- An **Auto Super Spec** button hangs under the talent window's bottom-right corner. Hover it to see your next talent; click it to open Auto Super Spec.
+
 ## Minimap button
 
 - **Left-click:** open your builds.
