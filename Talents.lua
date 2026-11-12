@@ -448,7 +448,8 @@ end
 
 -- The game's own tooltip for a talent at a rank, as saved lines.
 function Talents.TooltipLines(t, rank)
-    if t.tips then return t.tips[rank] end
+    if t.tips and t.tips[rank] and #t.tips[rank] > 2 then return t.tips[rank] end
+    local saved = t.tips and t.tips[rank]
     local lines
     if t.entryID and C_TooltipInfo and C_TooltipInfo.GetTraitEntry then
         lines = TooltipLines(Try(C_TooltipInfo.GetTraitEntry, t.entryID, rank))
@@ -456,7 +457,8 @@ function Talents.TooltipLines(t, rank)
     if not lines and t.spellID and C_TooltipInfo and C_TooltipInfo.GetSpellByID then
         lines = TooltipLines(Try(C_TooltipInfo.GetSpellByID, t.spellID))
     end
-    return lines
+    if t.tips and lines and #lines > #(saved or {}) then t.tips[rank] = lines end -- saved talent: remember it
+    return lines or saved
 end
 
 local function Saved(class)
@@ -590,6 +592,94 @@ function Talents.ReadClassTree(class)
     return ReadTree(VIEW_CONFIG_ID, treeID)
 end
 
+------------------------------------------------------------------------------
+-- Talent text for other classes
+------------------------------------------------------------------------------
+-- The game only has a spell's text once that spell is loaded. Your own
+-- class's spells always are; other classes' mostly aren't, so their talents
+-- were often saved without a description. Ask the game to load those spells
+-- and fill the saved talents in when each one arrives.
+
+local waiting = {} -- spellID -> { { class = ..., d = saved talent }, ... }
+
+local function HasText(d)
+    for r = 1, (d.maxRank or 1) do
+        if not (d.desc and type(d.desc[r]) == "string" and d.desc[r] ~= "") then return false end
+    end
+    return true
+end
+
+-- Reads a saved talent's text from the game again (all ranks).
+local function Refill(d)
+    local live = { entryID = d.entryID, spellID = d.spellID, name = d.name }
+    d.desc, d.tips = d.desc or {}, d.tips or {}
+    for r = 1, (d.maxRank or 1) do
+        local text = Talents.Description(live, r)
+        if text then d.desc[r] = text end
+        local lines = Talents.TooltipLines(live, r)
+        if lines then d.tips[r] = lines end
+    end
+end
+
+local function RequestText(class, d)
+    if not d.spellID or not (C_Spell and C_Spell.RequestLoadSpellData) then return false end
+    waiting[d.spellID] = waiting[d.spellID] or {}
+    table.insert(waiting[d.spellID], { class = class, d = d })
+    pcall(C_Spell.RequestLoadSpellData, d.spellID)
+    return true
+end
+
+-- Fills in missing talent text for every saved class. Returns how many
+-- talents are still waiting for the game to load their spell.
+function Talents.RequestMissingText()
+    local pending = 0
+    for class, data in pairs(AS.db.talentData or {}) do
+        for _, tree in ipairs(data.trees or {}) do
+            for _, d in ipairs(tree) do
+                if (d.entryID or d.spellID) and not HasText(d) then
+                    Refill(d)
+                    if not HasText(d) and RequestText(class, d) then pending = pending + 1 end
+                end
+            end
+        end
+        memo[class] = nil
+    end
+    return pending
+end
+
+local refreshQueued = false
+local function OnSpellLoaded(spellID)
+    local list = waiting[spellID]
+    if not list then return end
+    waiting[spellID] = nil
+    for _, w in ipairs(list) do
+        Refill(w.d)
+        memo[w.class] = nil
+    end
+    if not refreshQueued then
+        refreshQueued = true
+        AS.After(0.5, function()
+            refreshQueued = false
+            AS.RefreshUI()
+        end)
+    end
+end
+
+local spellEvents = CreateFrame("Frame")
+pcall(spellEvents.RegisterEvent, spellEvents, "SPELL_DATA_LOAD_RESULT")
+spellEvents:SetScript("OnEvent", function(_, _, spellID) OnSpellLoaded(spellID) end)
+
+-- Number of saved talents of a class that have no text yet.
+function Talents.MissingText(class)
+    local data, n = Saved(class), 0
+    for _, tree in ipairs(data and data.trees or {}) do
+        for _, d in ipairs(tree) do
+            if (d.entryID or d.spellID) and not HasText(d) then n = n + 1 end
+        end
+    end
+    return n
+end
+
 -- Reads the trees of classes that are missing or outdated (saved on another
 -- game build or in an older format). force: read every class again.
 function Talents.ScanClasses(force)
@@ -617,11 +707,17 @@ function Talents.Unspent() local b = Backend(); return b and b.Unspent() end
 
 -- The talent's text at a given rank (as the talent window shows it).
 function Talents.Description(t, rank)
-    if t.desc then return t.desc[rank] end
+    if t.desc and type(t.desc[rank]) == "string" and t.desc[rank] ~= "" then return t.desc[rank] end
     local text
     if t.entryID and C_Traits then text = Try(C_Traits.GetTraitDescription, t.entryID, rank) end
     if (not text or text == "") and t.spellID and C_Spell then text = Try(C_Spell.GetSpellDescription, t.spellID) end
-    if text and text ~= "" then return text end
+    if text and text ~= "" then
+        if t.desc then t.desc[rank] = text end -- saved talent: remember it
+        return text
+    end
+    if t.desc and t.spellID and C_Spell and C_Spell.RequestLoadSpellData then
+        pcall(C_Spell.RequestLoadSpellData, t.spellID) -- shows up on the next hover
+    end
 end
 function Talents.Busy() local b = Backend(); return b and b.Busy() end
 function Talents.CanReset() local b = Backend(); return b and b.CanReset() end
@@ -651,8 +747,9 @@ function Talents.DebugText()
         local scan = Talents.lastScan and Talents.lastScan[class]
         local sizes = {}
         for i, tree in ipairs(d and d.trees or {}) do sizes[i] = #tree end
-        add(("saved %s: %s%s%s"):format(class, d and (d.source .. " on build " .. tostring(d.build)) or "none",
+        add(("saved %s: %s%s%s%s"):format(class, d and (d.source .. " on build " .. tostring(d.build)) or "none",
             #sizes > 0 and (", talents per tree " .. table.concat(sizes, "/")) or "",
+            d and (", " .. Talents.MissingText(class) .. " without text") or "",
             scan ~= nil and (" (last view read: " .. tostring(scan) .. ")") or ""))
     end
     local layout, meta = Talents.Layout()

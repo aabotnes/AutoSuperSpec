@@ -522,6 +522,7 @@ end
 function AS.AutoScan()
     if AS.db.autoScan == false or (InCombatLockdown and InCombatLockdown()) then return end
     pcall(T.ScanClasses)
+    pcall(T.RequestMissingText)
 end
 
 -- Saves your own tree and reads every other class's tree again.
@@ -532,6 +533,7 @@ function AS.ScanTrees()
     end
     T.SaveOwnTree()
     local results = T.ScanClasses(true) or {}
+    local pending = T.RequestMissingText()
     local read = {}
     for class, r in pairs(results) do
         if r == true then read[#read + 1] = AS.ClassName(class) end
@@ -542,6 +544,9 @@ function AS.ScanTrees()
     local total = #AS.CLASSES
     Print(("talent trees saved: %d of %d classes."):format(total - #missing, total)
         .. (#read > 0 and (" Read now: " .. table.concat(read, ", ") .. ".") or ""))
+    if pending > 0 then
+        Print(("loading the text of %d talents from the game - tooltips fill in over the next moments."):format(pending))
+    end
     if #missing > 0 then
         Print("still missing: " .. table.concat(missing, ", ") .. ". Log in one character of each once and they're saved for all your characters.")
     end

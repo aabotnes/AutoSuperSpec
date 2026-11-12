@@ -214,6 +214,13 @@ local function AddGameLines(t, rank)
         if desc then GameTooltip:AddLine(desc, 1, 0.82, 0, true) end
         return
     end
+    -- the description, if the saved tooltip lines don't have it yet
+    local desc = T.Description(t, rank)
+    if desc then
+        for _, ln in ipairs(lines) do
+            if ln.l == desc then desc = nil break end
+        end
+    end
     for i, ln in ipairs(lines) do
         local skip = (i == 1 and ln.l == t.name) or (not ln.r and ln.l and ln.l:match("^Rank %d+/%d+$"))
         if not skip then
@@ -226,6 +233,7 @@ local function AddGameLines(t, rank)
             end
         end
     end
+    if desc then GameTooltip:AddLine(desc, 1, 0.82, 0, true) end
 end
 
 -- Full talent tooltip. rank: the rank to describe (the build's rank, or the

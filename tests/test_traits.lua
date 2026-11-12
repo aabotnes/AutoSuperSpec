@@ -24,6 +24,7 @@ local trees = {
         { "One-Handed Weapon Specialization", 5, 2, 3 }, { "Shield Slam", 5, 3, 5 }, { "Focused Rage", 6, 2, 1 } } },
 }
 
+local spellCached, spellRequests = {}, 0 -- other classes' spells load on request
 local nodes, nodeList = {}, {}
 local committed, staged, resetPending = {}, {}, false
 local id = 100
@@ -122,23 +123,36 @@ C_Traits = {
     ResetTree = function() if not canRefund then return false end; resetPending = true; return true end,
     GetTreeInfo = function() return { ID = 500, cannotRefund = not canRefund } end,
     CommitConfig = function() return false end,
-    GetTraitDescription = function(eid, rank) return nodes[eid / 10].name .. " rank " .. rank .. " text" end,
+    GetTraitDescription = function(eid, rank)
+        if nodes[eid / 10].mage and not spellCached[eid] then return "" end -- other class: not loaded yet
+        return nodes[eid / 10].name .. " rank " .. rank .. " text"
+    end,
 }
 local buildNumber = "70790"
 function GetBuildInfo() return "1.60.1", buildNumber, "Nov 3 2026", 16001 end
 C_TooltipInfo = {
     GetTraitEntry = function(eid, rank)
         local n = nodes[eid / 10]
-        return { lines = {
+        local lines = {
             { leftText = n.name },
             { leftText = ("Rank %d/%d"):format(rank, n.max) },
             { leftText = "20 Rage", rightText = "Melee Range" },
             { leftText = "Instant", rightText = "6 sec cooldown" },
-            { leftText = n.name .. " rank " .. rank .. " full text", leftColor = { r = 1, g = 0.82, b = 0 }, wrapText = true },
-        } }
+        }
+        if not n.mage or spellCached[eid] then
+            lines[#lines + 1] = { leftText = n.name .. " rank " .. rank .. " full text", leftColor = { r = 1, g = 0.82, b = 0 }, wrapText = true }
+        end
+        return { lines = lines }
     end,
 }
 C_Spell = {
+    RequestLoadSpellData = function(id)
+        spellRequests = spellRequests + 1
+        C_Timer.After(0.2, function()
+            spellCached[id] = true
+            M.Fire("SPELL_DATA_LOAD_RESULT", id, true)
+        end)
+    end,
     GetSpellName = function(sid) return nodes[sid / 10].name end,
     GetSpellTexture = function() return 136000 end,
 }
@@ -347,6 +361,10 @@ check(M.chatBox:GetText():find("[Auto Super Spec: Prot opener - warrior:2bbbbbe]
 -- another class through the view mode: full calculator on a warrior
 check(viewOpened[1] == "801@60", "mage tree read through the talent view mode: " .. tostring(viewOpened[1]))
 check(AS.db.talentData.MAGE and AS.db.talentData.MAGE.source == "view", "mage tree saved for the account")
+check(spellRequests >= 6, "asked the game to load the mage spells whose text was missing (" .. spellRequests .. ")")
+check(AS.db.talentData.MAGE.trees[1][2].desc[3] == "Arcane Focus rank 3 text"
+    and AS.db.talentData.MAGE.trees[1][2].tips[3][5].l == "Arcane Focus rank 3 full text"
+    and AS.Talents.MissingText("MAGE") == 0, "mage talent text filled in once the spells loaded, and saved")
 AS.ShowBuild(mage.id)
 check(C.trees[1]:IsShown() and C.trees[1].title:GetText() == "Arcane" and C.trees[3].title:GetText() == "Frost", "mage build opens on the real mage trees")
 local focus
@@ -354,6 +372,12 @@ for _, x in ipairs(C.trees[1].buttons) do if x.talent and x.talent.name == "Arca
 check(focus.rank:GetText() == "5/5", "mage build ranks shown (Arcane Focus maxed using the real max rank)")
 focus:GetScript("OnEnter")(focus)
 check(table.concat(M.tipLines, "|"):find("Arcane Focus rank 5 full text", 1, true) and table.concat(M.tipLines, "|"):find("6 sec cooldown", 1, true), "mage tooltip shows the saved full tooltip on a warrior")
+-- a saved tooltip without its description still shows the gold text
+local savedTips = AS.db.talentData.MAGE.trees[1][2].tips[5]
+local descLine = table.remove(savedTips, 5)
+focus:GetScript("OnEnter")(focus)
+check(table.concat(M.tipLines, "|"):find("Arcane Focus rank 5 text", 1, true), "description added when the saved tooltip lacks it")
+table.insert(savedTips, descLine)
 check(AS.db.talentData.MAGE.trees[1][2].tips[3][3].r == "Melee Range", "full tooltip lines saved for every rank")
 local missiles
 for _, x in ipairs(C.trees[1].buttons) do if x.talent and x.talent.name == "Improved Arcane Missiles" then missiles = x end end
