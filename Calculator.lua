@@ -44,7 +44,7 @@ end
 -- Can one more point go into t? Returns ok, reason.
 local function CanAdd(t, cur)
     if (cur.counts[t.key] or 0) >= t.maxRank then return false end
-    if #cur.steps >= AS.MaxPoints() then return false, "You have no talent points left." end
+    if #cur.steps >= AS.MaxPoints() then return false, "You have no talent points left.", true end
     local need = (t.tier - 1) * 5
     if (cur.treePts[t.tree] or 0) < need then
         return false, ("Requires %d points in %s"):format(need, TreeName(cur.meta, t.tree)), true

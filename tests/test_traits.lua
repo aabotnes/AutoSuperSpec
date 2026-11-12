@@ -304,10 +304,13 @@ check(C.message:GetText():find("Can't remove that point") and cb.rank:GetText() 
 local ihs = btn(1, "Improved Heroic Strike")
 ihs:GetScript("OnClick")(ihs, "LeftButton")
 check(C.message:GetText() == "You have no talent points left." and ihs.rank:GetText() == "0/3", "51 points max")
+check(ihs.icon._desat == true and btn(2, "Booming Voice").icon._desat == true and anti.icon._desat == false,
+    "fully specced: untaken talents are greyed out, taken ones aren't")
 -- remove last Focused Rage point, add Improved Heroic Strike instead, save
 local fr = btn(3, "Focused Rage")
 fr:GetScript("OnClick")(fr, "RightButton")
 check(fr.rank:GetText() == "0/1" and C.save:IsEnabled() ~= false, "point removed")
+check(ihs.icon._desat == false, "with a point free again, available talents light back up")
 ihs:GetScript("OnClick")(ihs, "LeftButton")
 check(ihs.rank:GetText() == "1/3" and ihs.step:GetText() == 51, "point added at the end of the order (step 51)")
 C.save:GetScript("OnClick")(C.save)
