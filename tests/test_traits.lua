@@ -622,7 +622,21 @@ for _, fr in ipairs(M.frames) do if fr._text == "Play" and fr ~= playB and fr._s
 TS.askSound = "quest"
 askPlay:GetScript("OnClick")(askPlay)
 check(M.sounds[#M.sounds] == "878@SFX", "ask sound has its own setting and Play button: " .. M.sounds[#M.sounds])
-TS.askSound = "readycheck"
+-- each sound has its own custom ID box; typing an ID switches that sound to Custom
+TS.sound, TS.askSound, TS.channel = "talent", "readycheck", "Master"
+AS.ShowPage("settings")
+local learnedBox, askBox = F.settingsPage.soundID, F.settingsPage.askSoundID
+askBox:SetText("7777")
+askBox:GetScript("OnTextChanged")(askBox, true)
+check(TS.askSound == "custom" and TS.askSoundID == 7777 and TS.sound == "talent", "typing an ask sound ID switches only the ask sound to custom")
+askPlay:GetScript("OnClick")(askPlay)
+check(M.sounds[#M.sounds] == "7777@Master", "ask sound plays its own custom ID: " .. M.sounds[#M.sounds])
+learnedBox:SetText("4242")
+learnedBox:GetScript("OnTextChanged")(learnedBox, true)
+playB:GetScript("OnClick")(playB)
+check(TS.sound == "custom" and M.sounds[#M.sounds] == "4242@Master", "learned sound plays its own custom ID: " .. M.sounds[#M.sounds])
+check(TS.askSoundID == 7777, "the two custom IDs are separate")
+TS.sound, TS.askSound = "talent", "readycheck"
 TS.sound, TS.channel = "none", "Master"
 nSounds = #M.sounds
 findButton(SP, "Preview popup"):GetScript("OnClick")()

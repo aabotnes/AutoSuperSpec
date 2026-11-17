@@ -5,6 +5,7 @@ local _, AS = ...
 local U
 local page
 local controls = {}
+local page_soundID, page_askID
 
 local ROW = 30
 
@@ -61,6 +62,39 @@ local function Stepper(parent, y, label, min, max, step, fmt, get, set)
     end)
     plus:SetPoint("LEFT", value, "RIGHT", 6, 0)
     controls[#controls + 1] = function() value:SetText(fmt(get() or min)) end
+end
+
+-- Custom sound ID box after a sound's Play button. Typing an ID switches
+-- that sound to "Custom sound ID".
+local function SoundIDBox(parent, anchor, soundKey, idKey)
+    local s = function() return AS.Toast.Settings() end
+    local box = U.Input(parent, 64, "ID")
+    box:SetPoint("LEFT", anchor, "RIGHT", 14, 0)
+    box:SetNumeric(true)
+    box:SetMaxLetters(9)
+    box:SetScript("OnEnterPressed", box.ClearFocus)
+    box:HookScript("OnTextChanged", function(self, userInput)
+        if userInput == false then return end
+        local id = tonumber(self:GetText()) or 0
+        s()[idKey] = id
+        if id > 0 and s()[soundKey] ~= "custom" then
+            s()[soundKey] = "custom"
+            AS.RefreshUI()
+        end
+    end)
+    box:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine("Custom sound ID", 1, 1, 1)
+        GameTooltip:AddLine("Any game sound kit ID. Typing one switches this sound to \"Custom sound ID\".", nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    box:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    controls[#controls + 1] = function()
+        local id = tonumber(s()[idKey]) or 0
+        if not box:HasFocus() then box:SetText(id > 0 and tostring(id) or "") end
+        box:SetAlpha(s()[soundKey] == "custom" and 1 or 0.55)
+    end
+    return box
 end
 
 local function Toggle(parent, y, label, tooltip, get, set, x)
@@ -137,6 +171,7 @@ function AS.CreateSettingsPage(parent, top)
     local soundNext = Cycler(left, y, "Learned sound", T.SOUNDS, function() return s().sound end, function(v) s().sound = v end)
     local play = U.Button(left, "Play", 60, 22, function() T.PlaySound(true) end)
     play:SetPoint("LEFT", soundNext, "RIGHT", 10, 0)
+    page_soundID = SoundIDBox(left, play, "sound", "soundID")
     y = y - ROW
     local askNext = Cycler(left, y, "Ask sound", T.SOUNDS, function() return s().askSound end, function(v) s().askSound = v end)
     local playAsk = U.Button(left, "Play", 60, 22, function() T.PlaySound(true, "ask") end)
@@ -148,26 +183,7 @@ function AS.CreateSettingsPage(parent, top)
         GameTooltip:Show()
     end)
     playAsk:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    y = y - ROW
-    Label(left, y - 4, "Custom sound ID")
-    local idBox = U.Input(left, 100, "e.g. 12891")
-    idBox:SetPoint("TOPLEFT", 156, y)
-    idBox:SetNumeric(true)
-    idBox:SetMaxLetters(9)
-    idBox:SetScript("OnEnterPressed", idBox.ClearFocus)
-    idBox:HookScript("OnTextChanged", function(self, userInput)
-        if userInput == false then return end
-        s().soundID = tonumber(self:GetText()) or 0
-    end)
-    local idHint = U.Text(left, "GameFontDisableSmall")
-    idHint:SetPoint("LEFT", idBox, "RIGHT", 10, 0)
-    idHint:SetText("used by sounds set to \"Custom sound ID\"")
-    controls[#controls + 1] = function()
-        if not idBox:HasFocus() then idBox:SetText((s().soundID or 0) > 0 and tostring(s().soundID) or "") end
-        local custom = s().sound == "custom" or s().askSound == "custom"
-        idBox:SetAlpha(custom and 1 or 0.5)
-        idHint:SetAlpha(custom and 1 or 0.5)
-    end
+    page_askID = SoundIDBox(left, playAsk, "askSound", "askSoundID")
     y = y - ROW
     Cycler(left, y, "Sound channel", T.CHANNELS, function() return s().channel end, function(v) s().channel = v end)
     y = y - ROW
@@ -279,6 +295,7 @@ function AS.CreateSettingsPage(parent, top)
     page.scan = { status = status, missing = missingText, last = last, button = scanButton, auto = auto }
 
     page.Refresh = Refresh
+    page.soundID, page.askSoundID = page_soundID, page_askID
     return page
 end
 
