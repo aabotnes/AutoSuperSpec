@@ -105,7 +105,7 @@ Click **Settings** on the builds page (or type `/ass settings`).
 - **Learned sound:** for the talent learned popup. Talent learned (default; the game's own talent sound), Talents applied, Achievement, Level up, Quest complete, Ready check, Raid warning, None, or a custom sound ID, with a **Play** button
 - **Ask sound:** for the *Learn now?* popup (Ask first). Talents applied by default (the game's sound for applying talents), with the same choices and its own **Play** button
 - Each sound has its own **custom ID** box after its Play button: type any game sound kit ID and that sound switches to *Custom sound ID*
-- **Sound channel**
+- **Sound channel:** SFX by default (Master, Dialog, Ambience and Music are also available)
 - **In combat:** show the popup *after combat* (default) or *right away*
 - **Position:** **Move popup** lets you drag it anywhere; **Reset** puts it back
 - **Preview popup** (next to the first checkbox) shows it for the next talent of the build you follow (`/ass test` does the same). With **Ask first** on, it previews the whole flow: the *Learn now?* popup with its sound, and on **Learn now** the talent learned popup with its sound. Nothing is actually learned.

@@ -85,7 +85,7 @@ check(AS.Toast.AskShown() and A.title:GetText() == "LEARN TALENT?" and A.name:Ge
     and A.sub:GetText() == "Rank 1/5  ·  +1 more point" and A.yes:GetText() == "Learn now" and A.no:GetText() == "Not now",
     "ask mode shows the learn popup in the banner style: " .. tostring(A and A.name:GetText()) .. " / " .. tostring(A and A.sub:GetText()))
 check(A._height == 78 + 34, "ask popup is tall enough for its buttons (" .. tostring(A._height) .. ")")
-check(M.sounds[#M.sounds] == "212391@Master", "ask popup plays its own sound (Talents applied): " .. tostring(M.sounds[#M.sounds]))
+check(M.sounds[#M.sounds] == "212391@SFX", "ask popup plays its own sound (Talents applied): " .. tostring(M.sounds[#M.sounds]))
 local before = #learned
 A.no:GetScript("OnClick")(A.no)
 check(not AS.Toast.AskShown() and #learned == before, "Not now closes it without learning")
@@ -94,7 +94,7 @@ check(AS.Toast.AskShown(), "asks again while the ding's point is still waiting")
 A.yes:GetScript("OnClick")(A.yes)
 M.Advance(3)
 check(#learned == before + 2 and not AS.Toast.AskShown(), "Learn now learns the waiting points (2) and closes the popup")
-check(M.sounds[#M.sounds] == "217825@Master", "the learned popup after Learn now plays the talent learned sound: " .. tostring(M.sounds[#M.sounds]))
+check(M.sounds[#M.sounds] == "217825@SFX", "the learned popup after Learn now plays the talent learned sound: " .. tostring(M.sounds[#M.sounds]))
 -- preview with Ask first on shows the ask version; its Learn now doesn't learn
 local n0 = #learned
 for _ = 1, 10 do AS.Toast.Update(20) end -- clear all earlier popups (and the queue)
@@ -106,7 +106,7 @@ M.Advance(3)
 local lp = AS.Toast.Shown()[1]
 check(not AS.Toast.AskShown() and #learned == n0 and lp and lp.title:GetText() == "TALENT LEARNED" and lp.name:GetText() == A.name:GetText(),
     "the preview's Learn now shows the talent learned popup (without learning)")
-check(askSound == "212391@Master" and M.sounds[#M.sounds] == "217825@Master", "preview plays the ask sound, then the learned sound")
+check(askSound == "212391@SFX" and M.sounds[#M.sounds] == "217825@SFX", "preview plays the ask sound, then the learned sound")
 AS.Toast.Update(20)
 AS.Toast.Preview()
 A.no:GetScript("OnClick")(A.no)

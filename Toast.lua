@@ -14,7 +14,7 @@ local FADE_IN, FADE_OUT, SLIDE = 0.3, 0.7, 18
 
 local DEFAULTS = {
     enabled = true, specNow = true, style = "class", scale = 1, duration = 5,
-    title = "Talent Learned", anim = true, sound = "talent", soundID = 0, channel = "Master",
+    title = "Talent Learned", anim = true, sound = "talent", soundID = 0, channel = "SFX",
     combat = "wait", desc = false, askSound = "talentapply", askSoundID = 0,
 }
 
@@ -64,6 +64,11 @@ function Toast.Settings()
     if s.defaults < 3 then
         if s.askSound == "readycheck" then s.askSound = "talentapply" end
         s.defaults = 3
+    end
+    -- 4.9.1: sounds play on the SFX channel by default
+    if s.defaults < 4 then
+        if s.channel == "Master" then s.channel = "SFX" end
+        s.defaults = 4
     end
     return s
 end

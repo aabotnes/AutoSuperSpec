@@ -215,7 +215,7 @@ local tp = toasts[#toasts]
 check(tp and tp:IsShown() and tp.name:GetText() == "Concussion Blow" and tp.sub:GetText() == "Rank 2/2  ·  Prot leveling"
     and tp.corner:GetText() == "Lvl 31" and tp.title:GetText() == "TALENT LEARNED",
     "ding shows a talent-learned popup: " .. tostring(tp and tp.name:GetText()) .. " / " .. tostring(tp and tp.sub:GetText()))
-check(M.sounds[#M.sounds] == "217825@Master", "popup plays the default 'Talent learned' sound: " .. tostring(M.sounds[#M.sounds]))
+check(M.sounds[#M.sounds] == "217825@SFX", "popup plays the default 'Talent learned' sound on SFX: " .. tostring(M.sounds[#M.sounds]))
 check(AS.Toast.Settings().style == "class" and AS.Toast.Find(AS.Toast.SOUNDS, "talent").name == "Talent learned", "defaults: Class color style, 'Talent learned' sound")
 AS.Toast.Update(20)
 check(#AS.Toast.Shown() == 0, "popup fades away after its duration")
@@ -538,10 +538,16 @@ check(F:IsShown(), "the button opens Auto Super Spec")
 local savedToast = AS.db.toast
 AS.db.toast = { style = "achievement", sound = "achievement" }
 local mig = AS.Toast.Settings()
-check(mig.style == "class" and mig.sound == "talent" and mig.askSound == "talentapply" and mig.defaults == 3, "old default style/sound updated to the new defaults")
+check(mig.style == "class" and mig.sound == "talent" and mig.askSound == "talentapply" and mig.channel == "SFX" and mig.defaults == 4, "old default style/sound/channel updated to the new defaults")
 AS.db.toast = { style = "class", sound = "talent", askSound = "readycheck", defaults = 2 }
 mig = AS.Toast.Settings()
-check(mig.askSound == "talentapply" and mig.defaults == 3, "old default ask sound (Ready check) moves to Talents applied")
+check(mig.askSound == "talentapply" and mig.defaults == 4, "old default ask sound (Ready check) moves to Talents applied")
+AS.db.toast = { channel = "Master", defaults = 3 }
+mig = AS.Toast.Settings()
+check(mig.channel == "SFX", "old default channel (Master) moves to SFX")
+AS.db.toast = { channel = "Dialog", defaults = 3 }
+mig = AS.Toast.Settings()
+check(mig.channel == "Dialog", "a channel you chose yourself is kept")
 AS.db.toast = { style = "arcane", sound = "quest", askSound = "quest", defaults = 2 }
 mig = AS.Toast.Settings()
 check(mig.askSound == "quest", "an ask sound you chose yourself is kept")
