@@ -538,7 +538,13 @@ check(F:IsShown(), "the button opens Auto Super Spec")
 local savedToast = AS.db.toast
 AS.db.toast = { style = "achievement", sound = "achievement" }
 local mig = AS.Toast.Settings()
-check(mig.style == "class" and mig.sound == "talent" and mig.defaults == 2, "old default style/sound updated to the new defaults")
+check(mig.style == "class" and mig.sound == "talent" and mig.askSound == "talentapply" and mig.defaults == 3, "old default style/sound updated to the new defaults")
+AS.db.toast = { style = "class", sound = "talent", askSound = "readycheck", defaults = 2 }
+mig = AS.Toast.Settings()
+check(mig.askSound == "talentapply" and mig.defaults == 3, "old default ask sound (Ready check) moves to Talents applied")
+AS.db.toast = { style = "arcane", sound = "quest", askSound = "quest", defaults = 2 }
+mig = AS.Toast.Settings()
+check(mig.askSound == "quest", "an ask sound you chose yourself is kept")
 AS.db.toast = { style = "arcane", sound = "quest" }
 mig = AS.Toast.Settings()
 check(mig.style == "arcane" and mig.sound == "quest", "settings you chose yourself are kept")
@@ -619,11 +625,18 @@ playB:GetScript("OnClick")()
 check(M.sounds[#M.sounds] == "5555@SFX", "custom sound ID and channel are used: " .. M.sounds[#M.sounds])
 local askPlay
 for _, fr in ipairs(M.frames) do if fr._text == "Play" and fr ~= playB and fr._scripts.OnClick then askPlay = fr end end
+check(TS.askSound == "talentapply" and AS.Toast.Find(AS.Toast.SOUNDS, "talentapply").name == "Talents applied", "ask sound defaults to 'Talents applied'")
+askPlay:GetScript("OnClick")(askPlay)
+check(M.sounds[#M.sounds] == "212391@SFX", "ask sound plays Talents applied (212391): " .. M.sounds[#M.sounds])
+TS.sound = "talentapply"
+playB:GetScript("OnClick")(playB)
+check(M.sounds[#M.sounds] == "212391@SFX", "Talents applied is also a choice for the learned sound")
+TS.sound = "custom"
 TS.askSound = "quest"
 askPlay:GetScript("OnClick")(askPlay)
 check(M.sounds[#M.sounds] == "878@SFX", "ask sound has its own setting and Play button: " .. M.sounds[#M.sounds])
 -- each sound has its own custom ID box; typing an ID switches that sound to Custom
-TS.sound, TS.askSound, TS.channel = "talent", "readycheck", "Master"
+TS.sound, TS.askSound, TS.channel = "talent", "talentapply", "Master"
 AS.ShowPage("settings")
 local learnedBox, askBox = F.settingsPage.soundID, F.settingsPage.askSoundID
 askBox:SetText("7777")
@@ -636,7 +649,7 @@ learnedBox:GetScript("OnTextChanged")(learnedBox, true)
 playB:GetScript("OnClick")(playB)
 check(TS.sound == "custom" and M.sounds[#M.sounds] == "4242@Master", "learned sound plays its own custom ID: " .. M.sounds[#M.sounds])
 check(TS.askSoundID == 7777, "the two custom IDs are separate")
-TS.sound, TS.askSound = "talent", "readycheck"
+TS.sound, TS.askSound = "talent", "talentapply"
 TS.sound, TS.channel = "none", "Master"
 nSounds = #M.sounds
 findButton(SP, "Preview popup"):GetScript("OnClick")()

@@ -15,7 +15,7 @@ local FADE_IN, FADE_OUT, SLIDE = 0.3, 0.7, 18
 local DEFAULTS = {
     enabled = true, specNow = true, style = "class", scale = 1, duration = 5,
     title = "Talent Learned", anim = true, sound = "talent", soundID = 0, channel = "Master",
-    combat = "wait", desc = false, askSound = "readycheck", askSoundID = 0,
+    combat = "wait", desc = false, askSound = "talentapply", askSoundID = 0,
 }
 
 Toast.STYLES = {
@@ -28,6 +28,7 @@ Toast.STYLES = {
 Toast.SOUNDS = {
     { key = "none", name = "None" },
     { key = "talent", name = "Talent learned", id = 217825 }, -- the game's CLASS_TALENT_LEARN_TALENT
+    { key = "talentapply", name = "Talents applied", id = 212391 }, -- the game's TALENT_APPLY_COMPLETE
     { key = "achievement", name = "Achievement", id = 12891 },
     { key = "levelup", name = "Level up", id = 888 },
     { key = "quest", name = "Quest complete", id = 878 },
@@ -58,6 +59,11 @@ function Toast.Settings()
         if s.style == "achievement" then s.style = "class" end
         if s.sound == "achievement" then s.sound = "talent" end
         s.defaults = 2
+    end
+    -- 4.8.9: new default ask sound
+    if s.defaults < 3 then
+        if s.askSound == "readycheck" then s.askSound = "talentapply" end
+        s.defaults = 3
     end
     return s
 end

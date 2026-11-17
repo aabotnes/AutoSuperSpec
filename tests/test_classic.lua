@@ -85,7 +85,7 @@ check(AS.Toast.AskShown() and A.title:GetText() == "LEARN TALENT?" and A.name:Ge
     and A.sub:GetText() == "Rank 1/5  ·  +1 more point" and A.yes:GetText() == "Learn now" and A.no:GetText() == "Not now",
     "ask mode shows the learn popup in the banner style: " .. tostring(A and A.name:GetText()) .. " / " .. tostring(A and A.sub:GetText()))
 check(A._height == 78 + 34, "ask popup is tall enough for its buttons (" .. tostring(A._height) .. ")")
-check(M.sounds[#M.sounds] == "8960@Master", "ask popup plays its own sound (Ready check): " .. tostring(M.sounds[#M.sounds]))
+check(M.sounds[#M.sounds] == "212391@Master", "ask popup plays its own sound (Talents applied): " .. tostring(M.sounds[#M.sounds]))
 local before = #learned
 A.no:GetScript("OnClick")(A.no)
 check(not AS.Toast.AskShown() and #learned == before, "Not now closes it without learning")
@@ -106,7 +106,7 @@ M.Advance(3)
 local lp = AS.Toast.Shown()[1]
 check(not AS.Toast.AskShown() and #learned == n0 and lp and lp.title:GetText() == "TALENT LEARNED" and lp.name:GetText() == A.name:GetText(),
     "the preview's Learn now shows the talent learned popup (without learning)")
-check(askSound == "8960@Master" and M.sounds[#M.sounds] == "217825@Master", "preview plays the ask sound, then the learned sound")
+check(askSound == "212391@Master" and M.sounds[#M.sounds] == "217825@Master", "preview plays the ask sound, then the learned sound")
 AS.Toast.Update(20)
 AS.Toast.Preview()
 A.no:GetScript("OnClick")(A.no)
