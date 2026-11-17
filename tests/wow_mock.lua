@@ -31,6 +31,7 @@ function Widget.CreateFontString() return NewWidget() end
 function Widget.CreateTexture() return NewWidget() end
 function Widget.Insert(self, t) self._text = self._text .. t end
 function Widget.GetStringWidth() return 80 end
+function Widget.SetTextColor(self, r, g, b) self._tc = ("%.2f,%.2f,%.2f"):format(r, g, b) end
 function Widget.SetHeight(self, h) self._height = h end
 function Widget.GetHeight(self) return self._height or 300 end
 function Widget.GetStringHeight(self) return (self._text and #self._text > 0) and 26 or 0 end

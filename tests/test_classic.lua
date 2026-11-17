@@ -79,10 +79,19 @@ AS.SetActive(b.id)
 M.level = 23
 M.Fire("PLAYER_LEVEL_UP", 23)
 M.Advance(2)
-check(M.LastPopup().which == "AUTOSUPERSPEC_LEARN", "ask mode shows a Learn popup on ding")
-M.ClickPopup("AUTOSUPERSPEC_LEARN")
+local A = AS.Toast.AskFrame()
+check(AS.Toast.AskShown() and A.title:GetText() == "LEARN TALENT?" and A.name:GetText() == "Ferocity"
+    and A.sub:GetText() == "Rank 1/5  ·  +1 more point" and A.yes:GetText() == "Learn now" and A.no:GetText() == "Not now",
+    "ask mode shows the learn popup in the banner style: " .. tostring(A and A.name:GetText()) .. " / " .. tostring(A and A.sub:GetText()))
+check(A._height == 78 + 34, "ask popup is tall enough for its buttons (" .. tostring(A._height) .. ")")
+local before = #learned
+A.no:GetScript("OnClick")(A.no)
+check(not AS.Toast.AskShown() and #learned == before, "Not now closes it without learning")
+AS.TryLearn()
+check(AS.Toast.AskShown(), "asks again while the ding's point is still waiting")
+A.yes:GetScript("OnClick")(A.yes)
 M.Advance(3)
-check(#learned > 0, "Learn button learns")
+check(#learned == before + 2 and not AS.Toast.AskShown(), "Learn now learns the waiting points (2) and closes the popup")
 
 -- chat link round trip into a new build
 SetItemRef("garrmission:autosuperspec:mage:0aaabbb2A:Frost AoE", "[Auto Super Spec: Frost AoE]", "LeftButton")

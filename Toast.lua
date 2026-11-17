@@ -13,8 +13,8 @@ local MAX_SHOWN = 3
 local FADE_IN, FADE_OUT, SLIDE = 0.3, 0.7, 18
 
 local DEFAULTS = {
-    enabled = true, specNow = true, style = "achievement", scale = 1, duration = 5,
-    title = "Talent Learned", anim = true, sound = "achievement", soundID = 0, channel = "Master",
+    enabled = true, specNow = true, style = "class", scale = 1, duration = 5,
+    title = "Talent Learned", anim = true, sound = "talent", soundID = 0, channel = "Master",
     combat = "wait", desc = false,
 }
 
@@ -27,6 +27,7 @@ Toast.STYLES = {
 
 Toast.SOUNDS = {
     { key = "none", name = "None" },
+    { key = "talent", name = "Talent learned", id = 217825 }, -- the game's CLASS_TALENT_LEARN_TALENT
     { key = "achievement", name = "Achievement", id = 12891 },
     { key = "levelup", name = "Level up", id = 888 },
     { key = "quest", name = "Quest complete", id = 878 },
@@ -51,6 +52,12 @@ function Toast.Settings()
     local s = AS.db.toast
     for k, v in pairs(DEFAULTS) do
         if s[k] == nil then s[k] = v end
+    end
+    -- 4.8.2 changed the defaults: move settings still on the old defaults
+    if (s.defaults or 1) < 2 then
+        if s.style == "achievement" then s.style = "class" end
+        if s.sound == "achievement" then s.sound = "talent" end
+        s.defaults = 2
     end
     return s
 end
@@ -153,12 +160,12 @@ local function CreateToast()
 
     f.desc = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.desc:SetPoint("TOPLEFT", 16, -(H - 4))
-    f.desc:SetPoint("RIGHT", -16, 0)
+    f.desc:SetWidth(W - 32)
     f.desc:SetJustifyH("LEFT")
     f.desc:SetJustifyV("TOP")
     f.desc:SetWordWrap(true)
     if f.desc.SetMaxLines then f.desc:SetMaxLines(6) end
-    f.desc:SetTextColor(0.9, 0.9, 0.9)
+    f.desc:SetTextColor(1, 0.82, 0) -- same gold as talent tooltips
     f.desc:SetSpacing(2)
     f.divider = f:CreateTexture(nil, "ARTWORK")
     f.divider:SetHeight(1)
@@ -211,10 +218,23 @@ local function Anchor()
     return "TOP", "TOP", 0, -150
 end
 
+local ask -- the "learn now?" popup (Ask first)
+
+-- Height that fits the popup's content (description, ask buttons).
+local function Measure(f)
+    local h = H
+    if f.desc:IsShown() then h = h + (f.desc:GetStringHeight() or 0) + 12 end
+    if f.ask then h = h + 34 end
+    return math.floor(h + 0.5)
+end
+
 local function Layout()
     local point, relPoint, x, y = Anchor()
     local offset = 0
-    for i, f in ipairs(shown) do
+    local list = {}
+    if ask and ask:IsShown() then list[1] = ask end
+    for _, f in ipairs(shown) do list[#list + 1] = f end
+    for i, f in ipairs(list) do
         local slide = 0
         if f.anim and f.t < FADE_IN then slide = SLIDE * (1 - f.t / FADE_IN) end
         f:ClearAllPoints()
@@ -237,7 +257,7 @@ local function Fill(f, data)
     f.desc:SetText(desc or "")
     f.desc:SetShown(desc and true or false)
     f.divider:SetShown(desc and true or false)
-    f.height = desc and math.floor(H + (f.desc:GetStringHeight() or 0) + 10) or H
+    f.height = Measure(f)
     f:SetHeight(f.height)
     f.t, f.hover, f.anim = 0, false, s.anim
     f.fadeOutAt = FADE_IN + math.max(1, s.duration or 5)
@@ -255,7 +275,21 @@ local function Pump()
         if not data.silent then Toast.PlaySound() end
     end
     Layout()
-    if driver then driver:SetShown(#shown > 0) end
+    if driver then driver:SetShown(#shown > 0 or (ask ~= nil and ask:IsShown())) end
+end
+
+-- Fades a popup in (and out), with the flash.
+local function Animate(f, fadeOut)
+    local alpha = 1
+    if f.anim then
+        if f.t < FADE_IN then alpha = f.t / FADE_IN
+        elseif fadeOut and f.t > f.fadeOutAt then alpha = 1 - (f.t - f.fadeOutAt) / FADE_OUT end
+        local flash = math.max(0, 1 - f.t / 0.9) * 0.45
+        f.flash:SetColorTexture(f.flashColor[1], f.flashColor[2], f.flashColor[3], flash)
+    elseif fadeOut and f.t > f.fadeOutAt then
+        alpha = 0
+    end
+    f:SetAlpha(math.max(0, math.min(1, alpha)))
 end
 
 -- Advances every popup by dt seconds (fade, slide, flash, hide).
@@ -269,18 +303,22 @@ function Toast.Update(dt)
             table.remove(shown, i)
             pool[#pool + 1] = f
         else
-            local alpha = 1
-            if f.anim then
-                if f.t < FADE_IN then alpha = f.t / FADE_IN
-                elseif f.t > f.fadeOutAt then alpha = 1 - (f.t - f.fadeOutAt) / FADE_OUT end
-                local flash = math.max(0, 1 - f.t / 0.9) * 0.45
-                f.flash:SetColorTexture(f.flashColor[1], f.flashColor[2], f.flashColor[3], flash)
-            elseif f.t > f.fadeOutAt then
-                alpha = 0
-            end
-            f:SetAlpha(math.max(0, math.min(1, alpha)))
+            Animate(f, true)
             i = i + 1
         end
+    end
+    if ask and ask:IsShown() then
+        ask.t = ask.t + dt
+        Animate(ask, false)
+    end
+    -- re-measure once the game has laid the text out
+    for _, f in ipairs(shown) do
+        local h = Measure(f)
+        if h ~= f.height then f.height = h; f:SetHeight(h) end
+    end
+    if ask and ask:IsShown() then
+        local h = Measure(ask)
+        if h ~= ask.height then ask.height = h; ask:SetHeight(h) end
     end
     Pump()
 end
@@ -295,6 +333,53 @@ combatWatch:RegisterEvent("PLAYER_REGEN_ENABLED")
 combatWatch:SetScript("OnEvent", function() AS.After(0.5, Pump) end)
 
 function Toast.Waiting() return #queue end
+
+------------------------------------------------------------------------------
+-- "Learn now?" popup (Ask first)
+------------------------------------------------------------------------------
+
+local function CreateAsk()
+    local f = CreateToast()
+    f.ask = true
+    f.yes = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    f.yes:SetSize(104, 22)
+    f.yes:SetPoint("BOTTOMRIGHT", -12, 10)
+    f.yes:SetText("Learn now")
+    f.no = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    f.no:SetSize(88, 22)
+    f.no:SetPoint("RIGHT", f.yes, "LEFT", -6, 0)
+    f.no:SetText("Not now")
+    f.yes:SetScript("OnClick", function()
+        local yes = f.onYes
+        Toast.HideAsk()
+        if yes then yes() end
+    end)
+    f.no:SetScript("OnClick", function() Toast.HideAsk() end)
+    f:SetScript("OnClick", function(_, button)
+        if button == "RightButton" then Toast.HideAsk() end
+    end)
+    return f
+end
+
+-- Shows (or updates) the "learn now?" popup. onYes runs on "Learn now".
+function Toast.ShowAsk(data, onYes)
+    local again = ask ~= nil and ask:IsShown()
+    ask = ask or CreateAsk()
+    local t = again and ask.t or 0
+    Fill(ask, data)
+    ask.t = t
+    ask.onYes = onYes
+    if not again then Toast.PlaySound(true) end
+    Pump()
+end
+
+function Toast.HideAsk()
+    if ask then ask:Hide(); ask.onYes = nil end
+    Pump()
+end
+
+function Toast.AskFrame() return ask end
+function Toast.AskShown() return ask ~= nil and ask:IsShown() end
 
 function Toast.Show(data)
     local s = Toast.Settings()

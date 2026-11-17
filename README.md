@@ -89,7 +89,9 @@ The talent data comes straight from the game, so it always matches your client. 
 
 ## Talent learned popup
 
-When a talent is learned on a ding, or when you accept the **Learn** prompt, an achievement-style popup shows the talent's icon and its name in yellow, with the rank, the build name and the level. Several at once stack (up to 3, the rest wait their turn). **Spec now** shows one summary popup instead. Hover a popup to keep it up, left-click it to open the build, right-click to dismiss it.
+With **Ask first** on, a ding shows the same kind of banner with **Learn now** and **Not now** buttons instead of learning right away. It stays until you answer.
+
+When a talent is learned on a ding, or when you click **Learn now**, an achievement-style popup shows the talent's icon and its name in yellow, with the rank, the build name and the level. Several at once stack (up to 3, the rest wait their turn). **Spec now** shows one summary popup instead. Hover a popup to keep it up, left-click it to open the build, right-click to dismiss it.
 
 ## Settings
 
@@ -97,11 +99,11 @@ Click **Settings** on the builds page (or type `/ass settings`).
 
 **Talent learned popup** (saved for all your characters):
 - show it or not, and whether "Spec now" gets a summary popup
-- **Style:** Achievement (gold), Arcane (violet), Class color or Minimal
+- **Style:** Class color (default), Achievement (gold), Arcane (violet) or Minimal
 - **Size**, **Duration** and the **Title text**
 - **Animation:** slide in and flash, or none
-- **Show the talent's description:** adds the talent's effect text, for the rank you learned, under its name. The popup grows to fit.
-- **Sound:** None, Achievement, Level up, Quest complete, Ready check, Raid warning, or any custom sound ID, with a **Play** button; and the **Sound channel**
+- **Show the talent's description:** adds the talent's effect text, for the rank you learned, under its name, in the same gold as the talent tooltips. The popup grows to fit.
+- **Sound:** Talent learned (default; the game's own talent sound), Achievement, Level up, Quest complete, Ready check, Raid warning, None, or any custom sound ID, with a **Play** button; and the **Sound channel**
 - **In combat:** show the popup *after combat* (default) or *right away*
 - **Position:** **Move popup** lets you drag it anywhere; **Reset** puts it back
 - **Preview popup** shows it for the next talent of the build you follow (`/ass test` does the same)

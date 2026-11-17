@@ -215,7 +215,8 @@ local tp = toasts[#toasts]
 check(tp and tp:IsShown() and tp.name:GetText() == "Concussion Blow" and tp.sub:GetText() == "Rank 2/2  ·  Prot leveling"
     and tp.corner:GetText() == "Lvl 31" and tp.title:GetText() == "TALENT LEARNED",
     "ding shows a talent-learned popup: " .. tostring(tp and tp.name:GetText()) .. " / " .. tostring(tp and tp.sub:GetText()))
-check(M.sounds[#M.sounds] == "12891@Master", "popup plays its sound: " .. tostring(M.sounds[#M.sounds]))
+check(M.sounds[#M.sounds] == "217825@Master", "popup plays the default 'Talent learned' sound: " .. tostring(M.sounds[#M.sounds]))
+check(AS.Toast.Settings().style == "class" and AS.Toast.Find(AS.Toast.SOUNDS, "talent").name == "Talent learned", "defaults: Class color style, 'Talent learned' sound")
 AS.Toast.Update(20)
 check(#AS.Toast.Shown() == 0, "popup fades away after its duration")
 
@@ -518,6 +519,16 @@ F:Hide()
 AutoSuperSpecTalentWindowButton:GetScript("OnClick")(AutoSuperSpecTalentWindowButton)
 check(F:IsShown(), "the button opens Auto Super Spec")
 
+-- settings saved on the old defaults move to the new ones (once); own choices stay
+local savedToast = AS.db.toast
+AS.db.toast = { style = "achievement", sound = "achievement" }
+local mig = AS.Toast.Settings()
+check(mig.style == "class" and mig.sound == "talent" and mig.defaults == 2, "old default style/sound updated to the new defaults")
+AS.db.toast = { style = "arcane", sound = "quest" }
+mig = AS.Toast.Settings()
+check(mig.style == "arcane" and mig.sound == "quest", "settings you chose yourself are kept")
+AS.db.toast = savedToast
+
 -- popups: settings, combat, preview, queue
 AS.Toast.Update(20) -- let earlier popups (e.g. the level 60 ding) finish
 local TS = AS.Toast.Settings()
@@ -557,6 +568,7 @@ check(TS.desc == false, "description is off by default")
 TS.desc = true
 AS.Toast.TalentsLearned({ { t = layout[3][2], rank = 2 }, { t = layout[3][5], rank = 1 } }, b, "auto")
 local d1, d2 = AS.Toast.Shown()[1], AS.Toast.Shown()[2]
+check(d1.desc._tc == "1.00,0.82,0.00", "description uses the talent tooltip gold: " .. tostring(d1.desc._tc))
 check(d1.desc:IsShown() and d1.desc:GetText() == "Anticipation rank 2 text" and d1._height > 78,
     "description shown for the learned rank, popup grows: " .. tostring(d1.desc:GetText()) .. " h=" .. tostring(d1._height))
 AS.Toast.Update(0.5) -- let the slide-in finish

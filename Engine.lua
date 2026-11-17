@@ -160,7 +160,7 @@ function AS.TryLearn(manual, opts)
     end
 
     if AS.char.mode == "ask" and not manual then
-        AS.ShowLearnPopup(build, todo)
+        AS.ShowLearnPopup(build, todo, levels)
         return
     end
 
@@ -191,7 +191,19 @@ function AS.TryLearn(manual, opts)
     end)
 end
 
-function AS.ShowLearnPopup(build, todo)
+function AS.ShowLearnPopup(build, todo, levels)
+    if AS.Toast and AS.Toast.ShowAsk then
+        local first, more = todo[1], #todo - 1
+        local rank = first.rank + 1
+        AS.Toast.ShowAsk({
+            icon = first.icon, title = "Learn talent?", name = first.name,
+            sub = ("Rank %d/%d  ·  %s"):format(rank, first.maxRank,
+                more > 0 and ("+%d more point%s"):format(more, more > 1 and "s" or "") or build.name),
+            corner = levels and levels[1] and ("Lvl " .. levels[1]) or nil,
+            desc = T.Description(first, rank), buildId = build.id,
+        }, function() AS.TryLearn(true, { ding = true }) end)
+        return
+    end
     if StaticPopup_Visible("AUTOSUPERSPEC_LEARN") then return end
     local first = todo[1]
     local text = #todo == 1 and ("%s (rank %d)"):format(first.name, first.rank + 1)
