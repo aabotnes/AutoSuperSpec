@@ -92,6 +92,19 @@ check(AS.Toast.AskShown(), "asks again while the ding's point is still waiting")
 A.yes:GetScript("OnClick")(A.yes)
 M.Advance(3)
 check(#learned == before + 2 and not AS.Toast.AskShown(), "Learn now learns the waiting points (2) and closes the popup")
+-- preview with Ask first on shows the ask version; its Learn now doesn't learn
+local n0 = #learned
+for _ = 1, 10 do AS.Toast.Update(20) end -- clear all earlier popups (and the queue)
+AS.Toast.Preview()
+check(AS.Toast.AskShown() and A.title:GetText() == "LEARN TALENT?" and #AS.Toast.Shown() == 0, "preview shows the ask version when Ask first is on")
+A.yes:GetScript("OnClick")(A.yes)
+M.Advance(3)
+check(not AS.Toast.AskShown() and #learned == n0, "the preview's Learn now only closes it")
+AS.char.mode = "auto"
+AS.Toast.Preview()
+check(not AS.Toast.AskShown() and #AS.Toast.Shown() == 1, "preview shows the normal popup when Ask first is off")
+AS.Toast.Update(20)
+AS.char.mode = "ask"
 
 -- chat link round trip into a new build
 SetItemRef("garrmission:autosuperspec:mage:0aaabbb2A:Frost AoE", "[Auto Super Spec: Frost AoE]", "LeftButton")

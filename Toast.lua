@@ -422,22 +422,32 @@ function Toast.TalentsLearned(learned, build, mode)
 end
 
 -- Shows the popup for the next talent of the build you follow (or an example).
+-- Shows the popup for the next talent of the build you follow (or an example).
+-- With Ask first on, it previews the "Learn now?" version; its buttons only
+-- close the preview.
 function Toast.Preview()
     local b = AS.ActiveBuild()
     local progress = b and b.class == AS.PlayerClass() and AS.Progress(b)
     local nxt = progress and progress.next
+    local data
     if nxt then
-        Toast.Show({
+        data = {
             preview = true, icon = nxt.t.icon, name = nxt.t.name, desc = AS.Talents.Description(nxt.t, nxt.rank),
             sub = ("Rank %d/%d  ·  %s"):format(nxt.rank, nxt.t.maxRank, b.name),
             corner = "Lvl " .. (9 + nxt.step), buildId = b.id,
-        })
+        }
     else
-        Toast.Show({
+        data = {
             preview = true, icon = AS.ICON, name = "Example Talent",
             desc = "Increases your chance to dodge by 2%. This is where the talent's effect is described.",
             sub = "Rank 1/5  ·  activate a build to preview its next talent", corner = "Lvl 10",
-        })
+        }
+    end
+    if AS.char and AS.char.mode == "ask" then
+        data.title = "Learn talent?"
+        Toast.ShowAsk(data, nil)
+    else
+        Toast.Show(data)
     end
 end
 
