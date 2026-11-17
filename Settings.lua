@@ -197,9 +197,6 @@ function AS.CreateSettingsPage(parent, top)
     Toggle(right, ry, "Ask first (this character)", "Show a Learn prompt on a ding instead of learning right away.",
         function() return AS.char.mode == "ask" end, function(v) AS.char.mode = v and "ask" or "auto" end)
     ry = ry - ROW + 4
-    Toggle(right, ry, "Auto-scan talent trees on open", "Read missing or outdated class trees every time the window opens.",
-        function() return AS.db.autoScan ~= false end, function(v) AS.db.autoScan = v end)
-    ry = ry - ROW + 4
     Toggle(right, ry, "Show minimap button", "The talent icon on the minimap.",
         function() return AS.MinimapButtonShown() end, function(v) AS.SetMinimapButtonShown(v) end)
     ry = ry - ROW + 4
@@ -212,6 +209,63 @@ function AS.CreateSettingsPage(parent, top)
     note:SetJustifyH("LEFT")
     note:SetWordWrap(true)
     note:SetText("\"This character\" options are saved per character. Everything else is saved for all your characters.")
+
+    -- talent trees (scanning) -----------------------------------------------
+    local ty = ry - 84
+    local rule = right:CreateTexture(nil, "ARTWORK")
+    rule:SetColorTexture(1, 1, 1, 0.1)
+    rule:SetHeight(1)
+    rule:SetPoint("TOPLEFT", 14, ty + 12)
+    rule:SetPoint("TOPRIGHT", -14, ty + 12)
+    local tt = U.Text(right, "GameFontNormalLarge")
+    tt:SetPoint("TOPLEFT", 14, ty)
+    tt:SetText("Talent trees")
+    local status = U.Text(right, "GameFontNormal")
+    status:SetPoint("TOPLEFT", 16, ty - 26)
+    status:SetPoint("RIGHT", -14, 0)
+    status:SetJustifyH("LEFT")
+    status:SetWordWrap(true)
+    local missingText = U.Text(right, "GameFontHighlightSmall")
+    missingText:SetPoint("TOPLEFT", status, "BOTTOMLEFT", 0, -4)
+    missingText:SetPoint("RIGHT", -14, 0)
+    missingText:SetJustifyH("LEFT")
+    missingText:SetWordWrap(true)
+    local last = U.Text(right, "GameFontDisableSmall")
+    last:SetPoint("TOPLEFT", missingText, "BOTTOMLEFT", 0, -8)
+    last:SetJustifyH("LEFT")
+    local scanButton = U.Button(right, "Scan talent trees", 160, 26, function() AS.ScanTrees() end)
+    scanButton:SetPoint("BOTTOMLEFT", 16, 16)
+    scanButton:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine("Scan talent trees", 1, 1, 1)
+        GameTooltip:AddLine("Reads every class's talent tree from the game again and saves it for all your characters. "
+            .. "Classes the game won't show from here are saved when you log in one of them.", nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    scanButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    local auto = Toggle(right, 0, "Auto-scan on open", "Every time the window opens, read the talent trees of classes that are missing or were saved on an older game version.",
+        function() return AS.db.autoScan ~= false end, function(v) AS.db.autoScan = v end)
+    auto:ClearAllPoints()
+    auto:SetPoint("BOTTOMLEFT", 12, 48)
+    controls[#controls + 1] = function()
+        local missing = AS.MissingTrees()
+        local total = #AS.CLASSES
+        if #missing > 0 then
+            status:SetText(("|cffffd100%d of %d classes saved|r"):format(total - #missing, total))
+            local names = {}
+            for _, c in ipairs(missing) do names[#names + 1] = AS.ClassName(c) end
+            missingText:SetText("Missing: " .. table.concat(names, ", "))
+            scanButton:SetText("Scan talent trees")
+        else
+            status:SetText(("|cff33ff33All %d classes saved|r"):format(total))
+            missingText:SetText("Every class's talent tree is available on all your characters.")
+            scanButton:SetText("Rescan")
+        end
+        local ls = AS.db.lastScan
+        last:SetText(ls and ("Last scan %s  ·  game %s (%s)"):format(date("%d %b %Y, %H:%M", ls.time), tostring(ls.version), tostring(ls.build))
+            or "Not scanned yet")
+    end
+    page.scan = { status = status, missing = missingText, last = last, button = scanButton, auto = auto }
 
     page.Refresh = Refresh
     return page

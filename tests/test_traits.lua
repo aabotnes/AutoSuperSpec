@@ -407,26 +407,30 @@ local druid = AS.Import("druid:0aab", "Balance")
 AS.ShowBuild(druid.id)
 check(C.noData:IsShown() and C.noData:GetText():find("Log in a Druid once") and C.order.rows[1].text:GetText():find("Tree 1, talent a"), "class with no saved tree: read-only order + how to get it")
 check(C.scanButton:IsShown(), "calculator offers a scan button when the tree is missing")
--- scan box on the list page
-local SB = F.scanBox
-check(SB.title:GetText():find("Talent trees: 2 / 9") and SB.text:GetText():find("Druid") and SB.button:GetText() == "Scan talent trees", "scan box shows missing trees: " .. SB.title:GetText() .. " " .. SB.text:GetText())
+-- talent trees section on the settings page
+local function openSettings() AS.ShowPage("settings"); return F.settingsPage.scan end
+local SB = openSettings()
+check(SB.status:GetText():find("2 of 9 classes saved") and SB.missing:GetText():find("Druid") and SB.button:GetText() == "Scan talent trees",
+    "settings show missing trees: " .. SB.status:GetText() .. " " .. SB.missing:GetText())
+check(F.scanBox == nil and F.autoCheck == nil and F.askCheck == nil, "builds page no longer has the scan box or the footer checkboxes")
 -- the druid tree becomes readable: scanning from the calculator fills it in place
 readable[1102] = true -- only the druid's 2nd spec has a tree
+AS.ShowBuild(druid.id)
 C.scanButton:GetScript("OnClick")(C.scanButton)
 check(AS.db.talentData.DRUID and C.trees[1]:IsShown() and not C.scanButton:IsShown(), "scan from the calculator loads the tree right away")
 C.back:GetScript("OnClick")(C.back)
-check(SB.title:GetText():find("3 / 9"), "scan box updated on the list page: " .. SB.title:GetText())
--- everything readable: rescan from the list page
+SB = openSettings()
+check(SB.status:GetText():find("3 of 9"), "settings updated: " .. SB.status:GetText())
+-- everything readable: rescan from settings
 for _, sp in ipairs({ 201, 301, 401, 501, 701, 901 }) do readable[sp] = true end
-C.back:GetScript("OnClick")(C.back)
 SB.button:GetScript("OnClick")(SB.button)
-check(SB.title:GetText():find("9 / 9") and SB.button:GetText() == "Rescan" and M.LogHas("talent trees saved: 9 of 9"), "all trees saved, button turns into Rescan")
+check(SB.status:GetText():find("All 9 classes saved") and SB.button:GetText() == "Rescan" and M.LogHas("talent trees saved: 9 of 9"), "all trees saved, button turns into Rescan")
 M.inCombat = true
 SB.button:GetScript("OnClick")(SB.button)
 check(M.LogHas("can't read talent trees in combat"), "no scanning in combat")
 M.inCombat = false
 -- last scan date + game version
-check(SB.last:GetText():find("^Scanned %d%d %a+ %d%d%d%d, %d%d:%d%d\nGame 1%.60%.1 %(70790%)$"), "last scan date and game version shown: " .. SB.last:GetText())
+check(SB.last:GetText():find("^Last scan %d%d %a+ %d%d%d%d, %d%d:%d%d  ·  game 1%.60%.1 %(70790%)$"), "last scan date and game version shown: " .. SB.last:GetText())
 -- auto-scan every time the window opens: only missing/outdated trees
 F:Hide()
 local opened = #viewOpened
@@ -435,11 +439,12 @@ check(#viewOpened == opened and SB.auto:GetChecked(), "auto-scan on open skips t
 F:Hide()
 buildNumber = "70800" -- game update
 AS.ShowUI()
+SB = openSettings()
 check(#viewOpened > opened and AS.db.talentData.MAGE.build == "70800" and SB.last:GetText():find("70800"), "after a game update, opening the window re-reads the trees")
-F:Hide()
 SB.auto:SetChecked(false)
 SB.auto:GetScript("OnClick")(SB.auto)
-check(AS.db.autoScan == false, "auto-scan can be turned off")
+check(AS.db.autoScan == false, "auto-scan can be turned off in settings")
+F:Hide()
 buildNumber = "70900"
 opened = #viewOpened
 AS.ShowUI()
@@ -447,6 +452,7 @@ check(#viewOpened == opened, "with auto-scan off, opening the window doesn't sca
 SB.auto:SetChecked(true)
 SB.auto:GetScript("OnClick")(SB.auto)
 buildNumber = "70790"
+AS.ShowUI()
 -- the warrior tree is saved too, for other characters
 check(AS.db.talentData.WARRIOR and AS.db.talentData.WARRIOR.source == "live", "own tree saved on login")
 function UnitClass() return "Mage", "MAGE" end

@@ -29,9 +29,7 @@ This is the page you see when you open Auto Super Spec. In the screenshot, a War
   - **Activate / Deactivate** sets the build this character levels with. Only one is active at a time; the active build is highlighted in green with how many of its points you've learned. Activating doesn't spend any points by itself. Use **Spec now** for that.
   - **Spec now** spends your free points on the build right away. If your current talents don't match the build, it offers to reset them and spec from scratch, when the game allows it. Otherwise reset at your class trainer first.
   - **...** (or right-click) opens **View / edit talents**, **Share...**, **Rename** and **Delete**.
-- **Following (bottom).** The build this character follows, a progress bar, and the next talent it will learn (here *Improved Revenge 3/3*). Two options:
-  - **Learn on level up**: learn the build's next talent automatically when you ding.
-  - **Ask first**: show a popup with a **Learn** button instead of learning right away.
+- **Following (bottom).** The build this character follows, a progress bar, and the next talent it will learn (here *Improved Revenge 3/3*). *Learn on level up* and *Ask first* are on the **Settings** page.
 
 ## Talent calculator
 
@@ -66,12 +64,12 @@ Click a build, or **New build**, to open it in the talent calculator. It opens i
 The talent data comes straight from the game, so it always matches your client. There's no website and nothing to update by hand.
 
 - **Your own class:** read live, every time.
-- **Other classes:** every time you open the window, the addon reads any class tree that's missing or was saved on an older game version. It uses the game's "view a talent link" mode, like when you open someone else's talent link. If that works, you see every class's full tree right away. Trees that are already up to date are skipped, so opening the window stays instant. Turn this off with **Auto-scan on open** in the scan box.
+- **Other classes:** every time you open the window, the addon reads any class tree that's missing or was saved on an older game version. It uses the game's "view a talent link" mode, like when you open someone else's talent link. If that works, you see every class's full tree right away. Trees that are already up to date are skipped, so opening the window stays instant. Turn this off with **Auto-scan on open** under *Talent trees* on the Settings page.
 - **Everything is saved:** each talent's full tooltip at every rank (costs, range, cast time, cooldown, description), its icon, position and prerequisites. That's how other classes' talents show their stats on any character.
 - **Fallback:** each time you log in, your character's tree is saved for your whole account. So even if the game doesn't allow the view mode, logging in one character of each class once makes every tree available on all your characters.
-- Saved trees are tagged with the game version and read again after a game update. The scan box shows when the last scan ran and which game version it read, e.g. *Scanned 10 Nov 2026, 19:52 · Game 1.60.1 (70862)*.
+- Saved trees are tagged with the game version and read again after a game update. The Settings page shows when the last scan ran and which game version it read, e.g. *Last scan 17 Nov 2026, 20:30 · game 1.60.1 (70938)*.
 - A class with no saved tree yet still shows its builds' learning order, plus a note to log in that class once.
-- **Scan talent trees** (bottom of the class list) shows how many classes have a saved tree. While any are missing, the box turns amber, lists the missing classes, and offers a big **Scan talent trees** button. Once every class is saved, it becomes a **Rescan** button, so you can scan again any time. Classes without a saved tree have a dimmed icon, and the calculator shows the same scan button when you open a build whose tree is missing. `/ass scan` does the same from chat.
+- **Settings → Talent trees** shows how many classes have a saved tree and lists any that are missing, with a **Scan talent trees** button. Once every class is saved, it becomes a **Rescan** button, so you can scan again any time. Classes without a saved tree have a dimmed icon, and the calculator shows the same scan button when you open a build whose tree is missing. `/ass scan` does the same from chat.
 
 ## When does it learn talents by itself?
 
@@ -110,9 +108,10 @@ Click **Settings** on the builds page (or type `/ass settings`).
 
 **General:**
 - *Learn on level up* and *Ask first*: saved per character
-- *Auto-scan talent trees on open*
 - *Show minimap button*
 - *Highlight next talent in the talent window*
+
+**Talent trees:** how many classes have a saved tree, which are missing, when the last scan ran and on which game version, *Auto-scan on open*, and the **Scan talent trees** / **Rescan** button.
 
 ## In the game's talent window
 

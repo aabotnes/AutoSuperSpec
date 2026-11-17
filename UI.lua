@@ -519,45 +519,6 @@ local function CreateUI()
         ui.classButtons[i] = b
     end
 
-    -- talent tree scan box (bottom of the class list)
-    local scan = Panel(side, 0.5)
-    scan:SetPoint("BOTTOMLEFT", 6, 6)
-    scan:SetPoint("BOTTOMRIGHT", -6, 6)
-    scan:SetHeight(176)
-    scan.title = Text(scan, "GameFontNormal")
-    scan.title:SetPoint("TOPLEFT", 8, -8)
-    scan.title:SetPoint("RIGHT", -8, 0)
-    scan.title:SetJustifyH("LEFT")
-    scan.text = Text(scan, "GameFontHighlightSmall")
-    scan.text:SetPoint("TOPLEFT", scan.title, "BOTTOMLEFT", 0, -4)
-    scan.text:SetPoint("RIGHT", -8, 0)
-    scan.text:SetJustifyH("LEFT")
-    scan.text:SetWordWrap(true)
-    scan.button = Button(scan, "Scan talent trees", SIDEBAR_W - 28, 26, function() AS.ScanTrees() end)
-    scan.button:SetPoint("BOTTOM", 0, 8)
-    scan.auto = Check(scan, "Auto-scan on open",
-        "Every time you open this window, read the talent trees of classes that are missing or were saved on an older game version.",
-        function(self) AS.db.autoScan = self:GetChecked() and true or false end)
-    scan.auto:SetPoint("BOTTOMLEFT", 8, 40)
-    scan.last = Text(scan, "GameFontDisableSmall")
-    scan.last:SetPoint("BOTTOMLEFT", 10, 70)
-    scan.last:SetPoint("RIGHT", -8, 0)
-    scan.last:SetSpacing(2)
-    local rule = scan:CreateTexture(nil, "ARTWORK")
-    rule:SetColorTexture(1, 1, 1, 0.1)
-    rule:SetHeight(1)
-    rule:SetPoint("BOTTOMLEFT", scan.last, "TOPLEFT", -2, 6)
-    rule:SetPoint("RIGHT", scan, "RIGHT", -8, 0)
-    scan.last:SetJustifyH("LEFT")
-    scan.button:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine("Scan talent trees", 1, 1, 1)
-        GameTooltip:AddLine("Reads every class's talent tree from the game again and saves it for all your characters. "
-            .. "Classes the game won't show from here are saved when you log in one of them.", nil, nil, nil, true)
-        GameTooltip:Show()
-    end)
-    scan.button:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    ui.scanBox = scan
 
     -- right side ------------------------------------------------------------
     local main = CreateFrame("Frame", nil, ui.listPage)
@@ -642,16 +603,6 @@ local function CreateUI()
     ui.resume = Button(foot, "Resume", 80, 22, function() AS.Resume() end)
     ui.resume:SetPoint("LEFT", ui.bar, "RIGHT", 12, 0)
 
-    ui.autoCheck = Check(foot, "Learn on level up", "Learn the next talents of the active build automatically when you ding.", function(self)
-        AS.char.enabled = self:GetChecked() and true or false
-        if AS.char.enabled then AS.state.paused = false end
-        AS.RefreshUI()
-    end)
-    ui.autoCheck:SetPoint("TOPRIGHT", -130, -12)
-    ui.askCheck = Check(foot, "Ask first", "Show a popup with a Learn button instead of learning right away.", function(self)
-        AS.char.mode = self:GetChecked() and "ask" or "auto"
-    end)
-    ui.askCheck:SetPoint("TOPLEFT", ui.autoCheck, "BOTTOMLEFT", 0, -2)
 
     -- build list
     local list = CreateFrame("Frame", nil, main)
@@ -731,27 +682,6 @@ function AS.RefreshUI()
         end
     end
 
-    -- talent tree scan box
-    local missing = AS.MissingTrees()
-    local total = #AS.CLASSES
-    local sb = ui.scanBox
-    if #missing > 0 then
-        sb.bg:SetColorTexture(0.45, 0.28, 0.02, 0.55)
-        sb.title:SetText(("|cffffd100Talent trees: %d / %d|r"):format(total - #missing, total))
-        local names = {}
-        for _, c in ipairs(missing) do names[#names + 1] = AS.ClassName(c) end
-        sb.text:SetText("Missing: " .. table.concat(names, ", "))
-        sb.button:SetText("Scan talent trees")
-    else
-        sb.bg:SetColorTexture(0, 0, 0, 0.35)
-        sb.title:SetText(("|cff33ff33Talent trees: %d / %d|r"):format(total, total))
-        sb.text:SetText("All classes saved.")
-        sb.button:SetText("Rescan")
-    end
-    local ls = AS.db.lastScan
-    sb.last:SetText(ls and ("Scanned %s\nGame %s (%s)"):format(date("%d %b %Y, %H:%M", ls.time), tostring(ls.version), tostring(ls.build))
-        or "Not scanned yet")
-    sb.auto:SetChecked(AS.db.autoScan ~= false)
 
     -- header
     SetClassIcon(ui.headerIcon, selectedClass)
@@ -824,8 +754,6 @@ function AS.RefreshUI()
             ui.nextText:SetText("|cff33ff33Build complete.|r")
         end
     end
-    ui.autoCheck:SetChecked(AS.char.enabled)
-    ui.askCheck:SetChecked(AS.char.mode == "ask")
 end
 
 -- Switches the window between the build list and the talent calculator.
