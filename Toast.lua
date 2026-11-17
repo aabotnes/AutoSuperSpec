@@ -15,7 +15,7 @@ local FADE_IN, FADE_OUT, SLIDE = 0.3, 0.7, 18
 local DEFAULTS = {
     enabled = true, specNow = true, style = "achievement", scale = 1, duration = 5,
     title = "Talent Learned", anim = true, sound = "achievement", soundID = 0, channel = "Master",
-    combat = "wait",
+    combat = "wait", desc = false,
 }
 
 Toast.STYLES = {
@@ -128,7 +128,7 @@ local function CreateToast()
 
     f.iconFrame = f:CreateTexture(nil, "ARTWORK")
     f.iconFrame:SetSize(56, 56)
-    f.iconFrame:SetPoint("LEFT", 12, 0)
+    f.iconFrame:SetPoint("TOPLEFT", 12, -11)
     f.icon = f:CreateTexture(nil, "ARTWORK", nil, 1)
     f.icon:SetSize(52, 52)
     f.icon:SetPoint("CENTER", f.iconFrame, "CENTER")
@@ -150,6 +150,20 @@ local function CreateToast()
     f.sub:SetJustifyH("LEFT")
     f.sub:SetWordWrap(false)
     f.sub:SetTextColor(0.8, 0.8, 0.8)
+
+    f.desc = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    f.desc:SetPoint("TOPLEFT", 16, -(H - 4))
+    f.desc:SetPoint("RIGHT", -16, 0)
+    f.desc:SetJustifyH("LEFT")
+    f.desc:SetJustifyV("TOP")
+    f.desc:SetWordWrap(true)
+    if f.desc.SetMaxLines then f.desc:SetMaxLines(6) end
+    f.desc:SetTextColor(0.9, 0.9, 0.9)
+    f.desc:SetSpacing(2)
+    f.divider = f:CreateTexture(nil, "ARTWORK")
+    f.divider:SetHeight(1)
+    f.divider:SetPoint("TOPLEFT", 14, -(H - 10))
+    f.divider:SetPoint("TOPRIGHT", -14, -(H - 10))
 
     f.flash = f:CreateTexture(nil, "OVERLAY")
     f.flash:SetAllPoints()
@@ -183,6 +197,7 @@ local function ApplyStyle(f, s)
     SetColor(f.outer, br, bg_, bb, framed and 1 or 0)
     SetColor(f.inner, style.inner and style.inner[1] or 0, style.inner and style.inner[2] or 0, style.inner and style.inner[3] or 0, framed and 0.9 or 0)
     f.iconFrame:SetColorTexture(br, bg_, bb, framed and 1 or 0)
+    f.divider:SetColorTexture(br, bg_, bb, framed and 0.35 or 0.15)
     f.flash:SetColorTexture(br, bg_, bb, 0)
     f.flashColor = { br, bg_, bb }
     f.shade:SetShown(framed)
@@ -198,12 +213,13 @@ end
 
 local function Layout()
     local point, relPoint, x, y = Anchor()
+    local offset = 0
     for i, f in ipairs(shown) do
-        local offset = (i - 1) * (H + GAP)
         local slide = 0
         if f.anim and f.t < FADE_IN then slide = SLIDE * (1 - f.t / FADE_IN) end
         f:ClearAllPoints()
-        f:SetPoint(point, UIParent, relPoint, x / f:GetScale(), (y + slide) / f:GetScale() - offset)
+        f:SetPoint(point, UIParent, relPoint, x / f:GetScale(), (y + slide) / f:GetScale() - offset / f:GetScale())
+        offset = offset + ((f.height or H) + GAP) * f:GetScale()
     end
 end
 
@@ -217,6 +233,12 @@ local function Fill(f, data)
     f.name:SetText(data.name or "")
     f.sub:SetText(data.sub or "")
     f.corner:SetText(data.corner or "")
+    local desc = s.desc and type(data.desc) == "string" and data.desc ~= "" and data.desc
+    f.desc:SetText(desc or "")
+    f.desc:SetShown(desc and true or false)
+    f.divider:SetShown(desc and true or false)
+    f.height = desc and math.floor(H + (f.desc:GetStringHeight() or 0) + 10) or H
+    f:SetHeight(f.height)
     f.t, f.hover, f.anim = 0, false, s.anim
     f.fadeOutAt = FADE_IN + math.max(1, s.duration or 5)
     f.endAt = f.fadeOutAt + FADE_OUT
@@ -306,7 +328,7 @@ function Toast.TalentsLearned(learned, build, mode)
     end
     for i, l in ipairs(learned) do
         Toast.Show({
-            icon = l.t.icon, name = l.t.name,
+            icon = l.t.icon, name = l.t.name, desc = AS.Talents.Description(l.t, l.rank),
             sub = ("Rank %d/%d%s"):format(l.rank, l.t.maxRank, build and ("  ·  " .. build.name) or ""),
             corner = l.level and ("Lvl " .. l.level) or nil,
             buildId = build and build.id, silent = i > 1,
@@ -321,13 +343,14 @@ function Toast.Preview()
     local nxt = progress and progress.next
     if nxt then
         Toast.Show({
-            preview = true, icon = nxt.t.icon, name = nxt.t.name,
+            preview = true, icon = nxt.t.icon, name = nxt.t.name, desc = AS.Talents.Description(nxt.t, nxt.rank),
             sub = ("Rank %d/%d  ·  %s"):format(nxt.rank, nxt.t.maxRank, b.name),
             corner = "Lvl " .. (9 + nxt.step), buildId = b.id,
         })
     else
         Toast.Show({
             preview = true, icon = AS.ICON, name = "Example Talent",
+            desc = "Increases your chance to dodge by 2%. This is where the talent's effect is described.",
             sub = "Rank 1/5  ·  activate a build to preview its next talent", corner = "Lvl 10",
         })
     end

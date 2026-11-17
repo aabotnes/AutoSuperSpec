@@ -31,6 +31,9 @@ function Widget.CreateFontString() return NewWidget() end
 function Widget.CreateTexture() return NewWidget() end
 function Widget.Insert(self, t) self._text = self._text .. t end
 function Widget.GetStringWidth() return 80 end
+function Widget.SetHeight(self, h) self._height = h end
+function Widget.GetHeight(self) return self._height or 300 end
+function Widget.GetStringHeight(self) return (self._text and #self._text > 0) and 26 or 0 end
 function Widget.SetScale(self, s) self._scale = s end
 function Widget.GetScale(self) return self._scale or 1 end
 function Widget.SetPoint(self, ...) self._point = { ... } end
@@ -39,7 +42,6 @@ function Widget.SetAlpha(self, a) self._alpha = a end
 function Widget.GetAlpha(self) return self._alpha or 1 end
 function Widget.SetDesaturated(self, v) self._desat = v and true or false end
 function Widget.SetColorTexture(self, r, g, b, a) self._color = ("%.2f,%.2f,%.2f,%.2f"):format(r, g, b, a or 1) end
-function Widget.GetHeight() return 300 end
 function Widget.GetWidth() return 140 end
 function Widget.GetCenter() return 0, 0 end
 function Widget.GetEffectiveScale() return 1 end

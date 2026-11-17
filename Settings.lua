@@ -130,6 +130,9 @@ function AS.CreateSettingsPage(parent, top)
     y = y - ROW
     Toggle(left, y, "Animation (slide in and flash)", "Slide and fade the popup in, with a short flash.",
         function() return s().anim end, function(v) s().anim = v end)
+    y = y - ROW + 4
+    Toggle(left, y, "Show the talent's description", "Add the talent's effect text (for the rank you learned) to the popup.",
+        function() return s().desc end, function(v) s().desc = v end)
     y = y - ROW - 4
     local soundNext = Cycler(left, y, "Sound", T.SOUNDS, function() return s().sound end, function(v) s().sound = v end)
     local play = U.Button(left, "Play", 60, 22, function() T.PlaySound(true) end)

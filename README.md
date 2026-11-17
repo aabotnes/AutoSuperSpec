@@ -100,6 +100,7 @@ Click **Settings** on the builds page (or type `/ass settings`).
 - **Style:** Achievement (gold), Arcane (violet), Class color or Minimal
 - **Size**, **Duration** and the **Title text**
 - **Animation:** slide in and flash, or none
+- **Show the talent's description:** adds the talent's effect text, for the rank you learned, under its name. The popup grows to fit.
 - **Sound:** None, Achievement, Level up, Quest complete, Ready check, Raid warning, or any custom sound ID, with a **Play** button; and the **Sound channel**
 - **In combat:** show the popup *after combat* (default) or *right away*
 - **Position:** **Move popup** lets you drag it anywhere; **Reset** puts it back

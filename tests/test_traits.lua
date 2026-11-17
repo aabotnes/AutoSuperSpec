@@ -552,6 +552,21 @@ check(#AS.Toast.Shown() == 3 and AS.Toast.Waiting() == 1, "at most 3 popups at o
 AS.Toast.Update(6.5)
 check(#AS.Toast.Shown() == 1, "queued popup shows when room frees up")
 AS.Toast.Update(20)
+-- optional talent description
+check(TS.desc == false, "description is off by default")
+TS.desc = true
+AS.Toast.TalentsLearned({ { t = layout[3][2], rank = 2 }, { t = layout[3][5], rank = 1 } }, b, "auto")
+local d1, d2 = AS.Toast.Shown()[1], AS.Toast.Shown()[2]
+check(d1.desc:IsShown() and d1.desc:GetText() == "Anticipation rank 2 text" and d1._height > 78,
+    "description shown for the learned rank, popup grows: " .. tostring(d1.desc:GetText()) .. " h=" .. tostring(d1._height))
+AS.Toast.Update(0.5) -- let the slide-in finish
+local _, _, _, _, y2 = d2:GetPoint()
+check(y2 == -150 - (d1._height + 8), "next popup moves down to make room (" .. tostring(y2) .. ")")
+AS.Toast.Update(20)
+TS.desc = false
+AS.Toast.TalentsLearned({ { t = layout[3][2], rank = 2 } }, b, "auto")
+check(not AS.Toast.Shown()[1].desc:IsShown() and AS.Toast.Shown()[1]._height == 78, "description hidden when the setting is off")
+AS.Toast.Update(20)
 
 -- settings page
 AS.ShowPage("settings")
