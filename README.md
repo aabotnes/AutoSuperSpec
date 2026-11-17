@@ -101,7 +101,9 @@ Click **Settings** on the builds page (or type `/ass settings`).
 - **Size**, **Duration** and the **Title text**
 - **Animation:** slide in and flash, or none
 - **Show the talent's description:** adds the talent's effect text, for the rank you learned, under its name, in the same gold as the talent tooltips. The popup grows to fit.
-- **Sound:** Talent learned (default; the game's own talent sound), Achievement, Level up, Quest complete, Ready check, Raid warning, None, or any custom sound ID, with a **Play** button; and the **Sound channel**
+- **Learned sound:** for the talent learned popup. Talent learned (default; the game's own talent sound), Achievement, Level up, Quest complete, Ready check, Raid warning, None, or any custom sound ID, with a **Play** button
+- **Ask sound:** for the *Learn now?* popup (Ask first). Ready check by default, with the same choices and its own **Play** button
+- **Sound channel**
 - **In combat:** show the popup *after combat* (default) or *right away*
 - **Position:** **Move popup** lets you drag it anywhere; **Reset** puts it back
 - **Preview popup** shows it for the next talent of the build you follow (`/ass test` does the same). With **Ask first** on, it previews the *Learn now / Not now* version; its buttons only close the preview.

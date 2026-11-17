@@ -15,7 +15,7 @@ local FADE_IN, FADE_OUT, SLIDE = 0.3, 0.7, 18
 local DEFAULTS = {
     enabled = true, specNow = true, style = "class", scale = 1, duration = 5,
     title = "Talent Learned", anim = true, sound = "talent", soundID = 0, channel = "Master",
-    combat = "wait", desc = false,
+    combat = "wait", desc = false, askSound = "readycheck",
 }
 
 Toast.STYLES = {
@@ -75,13 +75,16 @@ end
 
 local lastSound = -1
 
-function Toast.PlaySound(force)
+-- which: "ask" for the "Learn now?" popup, otherwise the talent learned sound.
+function Toast.PlaySound(force, which)
     local s = Toast.Settings()
-    local entry = Toast.Find(Toast.SOUNDS, s.sound)
+    local entry = Toast.Find(Toast.SOUNDS, which == "ask" and s.askSound or s.sound)
     local id = entry.key == "custom" and tonumber(s.soundID) or entry.id
     if not id or id <= 0 or type(PlaySound) ~= "function" then return false end
-    if not force and GetTime() - lastSound < 0.4 then return false end -- one sound per burst
-    lastSound = GetTime()
+    if which ~= "ask" then
+        if not force and GetTime() - lastSound < 0.4 then return false end -- one sound per burst of learned popups
+        lastSound = GetTime()
+    end
     return pcall(PlaySound, id, s.channel)
 end
 
@@ -369,7 +372,7 @@ function Toast.ShowAsk(data, onYes)
     Fill(ask, data)
     ask.t = t
     ask.onYes = onYes
-    if not again then Toast.PlaySound(true) end
+    if not again then Toast.PlaySound(true, "ask") end
     Pump()
 end
 

@@ -73,6 +73,7 @@ M.Advance(10)
 check(M.LogHas("paused") and #learned == 0, "pauses on a point it can't learn")
 
 -- ask mode
+for _ = 1, 10 do AS.Toast.Update(20) end -- clear popups from the earlier dings
 AS.char.mode = "ask"
 AS.state.paused = false
 AS.SetActive(b.id)
@@ -84,6 +85,7 @@ check(AS.Toast.AskShown() and A.title:GetText() == "LEARN TALENT?" and A.name:Ge
     and A.sub:GetText() == "Rank 1/5  ·  +1 more point" and A.yes:GetText() == "Learn now" and A.no:GetText() == "Not now",
     "ask mode shows the learn popup in the banner style: " .. tostring(A and A.name:GetText()) .. " / " .. tostring(A and A.sub:GetText()))
 check(A._height == 78 + 34, "ask popup is tall enough for its buttons (" .. tostring(A._height) .. ")")
+check(M.sounds[#M.sounds] == "8960@Master", "ask popup plays its own sound (Ready check): " .. tostring(M.sounds[#M.sounds]))
 local before = #learned
 A.no:GetScript("OnClick")(A.no)
 check(not AS.Toast.AskShown() and #learned == before, "Not now closes it without learning")
@@ -92,6 +94,7 @@ check(AS.Toast.AskShown(), "asks again while the ding's point is still waiting")
 A.yes:GetScript("OnClick")(A.yes)
 M.Advance(3)
 check(#learned == before + 2 and not AS.Toast.AskShown(), "Learn now learns the waiting points (2) and closes the popup")
+check(M.sounds[#M.sounds] == "217825@Master", "the learned popup after Learn now plays the talent learned sound: " .. tostring(M.sounds[#M.sounds]))
 -- preview with Ask first on shows the ask version; its Learn now doesn't learn
 local n0 = #learned
 for _ = 1, 10 do AS.Toast.Update(20) end -- clear all earlier popups (and the queue)

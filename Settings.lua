@@ -6,7 +6,7 @@ local U
 local page
 local controls = {}
 
-local ROW = 32
+local ROW = 30
 
 local function Label(parent, y, text, x)
     local fs = U.Text(parent, "GameFontNormal")
@@ -134,9 +134,20 @@ function AS.CreateSettingsPage(parent, top)
     Toggle(left, y, "Show the talent's description", "Add the talent's effect text (for the rank you learned) to the popup.",
         function() return s().desc end, function(v) s().desc = v end)
     y = y - ROW - 4
-    local soundNext = Cycler(left, y, "Sound", T.SOUNDS, function() return s().sound end, function(v) s().sound = v end)
+    local soundNext = Cycler(left, y, "Learned sound", T.SOUNDS, function() return s().sound end, function(v) s().sound = v end)
     local play = U.Button(left, "Play", 60, 22, function() T.PlaySound(true) end)
     play:SetPoint("LEFT", soundNext, "RIGHT", 10, 0)
+    y = y - ROW
+    local askNext = Cycler(left, y, "Ask sound", T.SOUNDS, function() return s().askSound end, function(v) s().askSound = v end)
+    local playAsk = U.Button(left, "Play", 60, 22, function() T.PlaySound(true, "ask") end)
+    playAsk:SetPoint("LEFT", askNext, "RIGHT", 10, 0)
+    playAsk:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine("Ask sound", 1, 1, 1)
+        GameTooltip:AddLine("Plays when the \"Learn now?\" popup appears (Ask first).", nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    playAsk:SetScript("OnLeave", function() GameTooltip:Hide() end)
     y = y - ROW
     Label(left, y - 4, "Custom sound ID")
     local idBox = U.Input(left, 100, "e.g. 12891")
@@ -150,10 +161,10 @@ function AS.CreateSettingsPage(parent, top)
     end)
     local idHint = U.Text(left, "GameFontDisableSmall")
     idHint:SetPoint("LEFT", idBox, "RIGHT", 10, 0)
-    idHint:SetText("used when Sound is \"Custom sound ID\"")
+    idHint:SetText("used by sounds set to \"Custom sound ID\"")
     controls[#controls + 1] = function()
         if not idBox:HasFocus() then idBox:SetText((s().soundID or 0) > 0 and tostring(s().soundID) or "") end
-        local custom = s().sound == "custom"
+        local custom = s().sound == "custom" or s().askSound == "custom"
         idBox:SetAlpha(custom and 1 or 0.5)
         idHint:SetAlpha(custom and 1 or 0.5)
     end

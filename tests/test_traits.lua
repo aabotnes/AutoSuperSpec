@@ -617,6 +617,12 @@ check(#M.sounds == nSounds + 1, "Play previews the sound")
 TS.sound, TS.soundID, TS.channel = "custom", 5555, "SFX"
 playB:GetScript("OnClick")()
 check(M.sounds[#M.sounds] == "5555@SFX", "custom sound ID and channel are used: " .. M.sounds[#M.sounds])
+local askPlay
+for _, fr in ipairs(M.frames) do if fr._text == "Play" and fr ~= playB and fr._scripts.OnClick then askPlay = fr end end
+TS.askSound = "quest"
+askPlay:GetScript("OnClick")(askPlay)
+check(M.sounds[#M.sounds] == "878@SFX", "ask sound has its own setting and Play button: " .. M.sounds[#M.sounds])
+TS.askSound = "readycheck"
 TS.sound, TS.channel = "none", "Master"
 nSounds = #M.sounds
 findButton(SP, "Preview popup"):GetScript("OnClick")()
