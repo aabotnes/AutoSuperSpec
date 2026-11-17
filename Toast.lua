@@ -426,8 +426,8 @@ end
 
 -- Shows the popup for the next talent of the build you follow (or an example).
 -- Shows the popup for the next talent of the build you follow (or an example).
--- With Ask first on, it previews the "Learn now?" version; its buttons only
--- close the preview.
+-- With Ask first on, it previews the whole flow: the "Learn now?" popup, and
+-- on "Learn now" the talent learned popup (nothing is actually learned).
 function Toast.Preview()
     local b = AS.ActiveBuild()
     local progress = b and b.class == AS.PlayerClass() and AS.Progress(b)
@@ -447,8 +447,10 @@ function Toast.Preview()
         }
     end
     if AS.char and AS.char.mode == "ask" then
+        local learned = {}
+        for k, v in pairs(data) do learned[k] = v end
         data.title = "Learn talent?"
-        Toast.ShowAsk(data, nil)
+        Toast.ShowAsk(data, function() Toast.Show(learned) end)
     else
         Toast.Show(data)
     end

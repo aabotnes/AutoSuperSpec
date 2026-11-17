@@ -106,7 +106,7 @@ Click **Settings** on the builds page (or type `/ass settings`).
 - **Sound channel**
 - **In combat:** show the popup *after combat* (default) or *right away*
 - **Position:** **Move popup** lets you drag it anywhere; **Reset** puts it back
-- **Preview popup** shows it for the next talent of the build you follow (`/ass test` does the same). With **Ask first** on, it previews the *Learn now / Not now* version; its buttons only close the preview.
+- **Preview popup** shows it for the next talent of the build you follow (`/ass test` does the same). With **Ask first** on, it previews the whole flow: the *Learn now?* popup with its sound, and on **Learn now** the talent learned popup with its sound. Nothing is actually learned.
 
 **General:**
 - *Learn on level up* and *Ask first*: saved per character

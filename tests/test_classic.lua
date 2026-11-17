@@ -100,9 +100,17 @@ local n0 = #learned
 for _ = 1, 10 do AS.Toast.Update(20) end -- clear all earlier popups (and the queue)
 AS.Toast.Preview()
 check(AS.Toast.AskShown() and A.title:GetText() == "LEARN TALENT?" and #AS.Toast.Shown() == 0, "preview shows the ask version when Ask first is on")
+local askSound = M.sounds[#M.sounds]
 A.yes:GetScript("OnClick")(A.yes)
 M.Advance(3)
-check(not AS.Toast.AskShown() and #learned == n0, "the preview's Learn now only closes it")
+local lp = AS.Toast.Shown()[1]
+check(not AS.Toast.AskShown() and #learned == n0 and lp and lp.title:GetText() == "TALENT LEARNED" and lp.name:GetText() == A.name:GetText(),
+    "the preview's Learn now shows the talent learned popup (without learning)")
+check(askSound == "8960@Master" and M.sounds[#M.sounds] == "217825@Master", "preview plays the ask sound, then the learned sound")
+AS.Toast.Update(20)
+AS.Toast.Preview()
+A.no:GetScript("OnClick")(A.no)
+check(not AS.Toast.AskShown() and #AS.Toast.Shown() == 0, "the preview's Not now just closes it")
 AS.char.mode = "auto"
 AS.Toast.Preview()
 check(not AS.Toast.AskShown() and #AS.Toast.Shown() == 1, "preview shows the normal popup when Ask first is off")
