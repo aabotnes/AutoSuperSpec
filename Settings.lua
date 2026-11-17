@@ -134,9 +134,11 @@ function AS.CreateSettingsPage(parent, top)
 
     local s = function() return T.Settings() end
     local y = -54
+    local popupRowY = y
     Toggle(left, y, "Show a popup when a talent is learned", "Achievement-style popup with the talent's icon and name.",
         function() return s().enabled end, function(v) s().enabled = v end)
     y = y - ROW + 4
+    local specRowY = y
     Toggle(left, y, "Also for \"Spec now\" (one summary popup)", "When Spec now learns many talents at once, show one popup that sums it up.",
         function() return s().specNow end, function(v) s().specNow = v end)
     y = y - ROW - 4
@@ -199,8 +201,9 @@ function AS.CreateSettingsPage(parent, top)
     reset:SetPoint("LEFT", move, "RIGHT", 6, 0)
     controls[#controls + 1] = function() move:SetText(T.IsMoving() and "Done" or "Move popup") end
 
-    local preview = U.Button(left, "Preview popup", 150, 28, function() T.Preview() end)
-    preview:SetPoint("TOPRIGHT", -14, -12)
+    -- each preview sits on the row of the checkbox it belongs to
+    local preview = U.Button(left, "Preview popup", 140, 22, function() T.Preview() end)
+    preview:SetPoint("TOPLEFT", 362, popupRowY)
     preview:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:AddLine("Preview popup", 1, 1, 1)
@@ -209,6 +212,16 @@ function AS.CreateSettingsPage(parent, top)
     end)
     preview:SetScript("OnLeave", function() GameTooltip:Hide() end)
     page.preview = preview
+    local previewSpec = U.Button(left, "Preview Spec now", 140, 22, function() T.PreviewSpecNow() end)
+    previewSpec:SetPoint("TOPLEFT", 362, specRowY)
+    previewSpec:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine("Preview Spec now", 1, 1, 1)
+        GameTooltip:AddLine("Shows the summary popup as if Spec now learned your whole active build, first point to last. Nothing is learned.", nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    previewSpec:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    page.previewSpec = previewSpec
 
     -- right: general ------------------------------------------------------------
     local right = U.Panel(page, 0.35)

@@ -259,7 +259,7 @@ M.ClickPopup("AUTOSUPERSPEC_APPLY")
 M.Advance(5)
 check(spentNow() == 50, "spec now fills the free points (" .. spentNow() .. ")")
 tp = AS.Toast.Shown()[#AS.Toast.Shown()]
-check(tp and tp.title:GetText() == "SPEC COMPLETE" and tp.sub:GetText() == "26 talents learned" and tp.name:GetText() == "Prot leveling",
+check(tp and tp.title:GetText() == "SPEC COMPLETE" and tp.sub:GetText() == "26 talents learned  ·  4/15/32" and tp.name:GetText() == "Prot leveling",
     "spec now shows one summary popup: " .. tostring(tp and tp.sub:GetText()))
 AS.Toast.Update(20)
 
@@ -682,6 +682,22 @@ check(F.page == "settings", "/ass settings")
 SlashCmdList.AUTOSUPERSPEC("test")
 check(#AS.Toast.Shown() == 1, "/ass test previews the popup")
 AS.Toast.Update(20)
+-- Spec now preview: summary for the whole active build, even with the summary turned off
+AS.SetActive(b.id, true)
+TS.specNow = false
+M.Advance(1) -- past the sound repeat guard
+local nSpec = #M.sounds
+F.settingsPage.previewSpec:GetScript("OnClick")(F.settingsPage.previewSpec)
+local sp = AS.Toast.Shown()[1]
+local allSteps = AS.Progress(b).steps
+check(sp and sp.title:GetText() == "SPEC COMPLETE" and sp.name:GetText() == "Prot leveling"
+    and sp.sub:GetText() == ("%d talents learned  ·  %s"):format(#allSteps, b.trees) and sp.corner:GetText() == "Lvl " .. (9 + #allSteps)
+    and #M.sounds == nSpec + 1, "Preview Spec now: summary for the whole build: " .. tostring(sp and sp.sub:GetText()) .. " / " .. tostring(sp and sp.corner:GetText()))
+AS.Toast.Update(20)
+SlashCmdList.AUTOSUPERSPEC("testspec")
+check(#AS.Toast.Shown() == 1 and AS.Toast.Shown()[1].title:GetText() == "SPEC COMPLETE", "/ass testspec")
+AS.Toast.Update(20)
+TS.specNow = true
 AS.ShowUI()
 AS.SetActive(nil, true)
 

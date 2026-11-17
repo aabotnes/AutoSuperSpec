@@ -647,6 +647,8 @@ SlashCmdList["AUTOSUPERSPEC"] = function(msg)
         AS.ShowPage("settings")
     elseif cmd == "test" or cmd == "preview" then
         AS.Toast.Preview()
+    elseif cmd == "testspec" then
+        AS.Toast.PreviewSpecNow()
     elseif cmd == "minimap" then
         AS.ToggleMinimapButton()
     elseif cmd == "view" then
@@ -657,7 +659,7 @@ SlashCmdList["AUTOSUPERSPEC"] = function(msg)
     elseif cmd == "debug" then
         AS.ShowCopyWindow("Auto Super Spec debug - press Ctrl+C to copy", T.DebugText())
     else
-        Print("commands: /ass (window), /ass settings, /ass test (preview popup), /ass view, /ass import <link>, /ass status, /ass list, /ass on|off, /ass ask|auto, /ass learn, /ass resume, /ass minimap, /ass scan, /ass debug")
+        Print("commands: /ass (window), /ass settings, /ass test (preview popup), /ass testspec (preview Spec now), /ass view, /ass import <link>, /ass status, /ass list, /ass on|off, /ass ask|auto, /ass learn, /ass resume, /ass minimap, /ass scan, /ass debug")
     end
 end
 

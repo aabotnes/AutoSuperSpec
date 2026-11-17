@@ -96,7 +96,8 @@ When a talent is learned on a ding, or when you click **Learn now**, an achievem
 Click **Settings** on the builds page (or type `/ass settings`).
 
 **Talent learned popup** (saved for all your characters):
-- show it or not, and whether "Spec now" gets a summary popup
+- show it or not, with a **Preview popup** button on the same row
+- whether "Spec now" gets a summary popup, with a **Preview Spec now** button on the same row: it shows the summary as if Spec now learned your whole active build, first point to last (`/ass testspec`). Nothing is learned.
 - **Style:** Class color (default), Achievement (gold), Arcane (violet) or Minimal
 - **Size**, **Duration** and the **Title text**
 - **Animation:** slide in and flash, or none
@@ -107,7 +108,7 @@ Click **Settings** on the builds page (or type `/ass settings`).
 - **Sound channel**
 - **In combat:** show the popup *after combat* (default) or *right away*
 - **Position:** **Move popup** lets you drag it anywhere; **Reset** puts it back
-- **Preview popup** shows it for the next talent of the build you follow (`/ass test` does the same). With **Ask first** on, it previews the whole flow: the *Learn now?* popup with its sound, and on **Learn now** the talent learned popup with its sound. Nothing is actually learned.
+- **Preview popup** (next to the first checkbox) shows it for the next talent of the build you follow (`/ass test` does the same). With **Ask first** on, it previews the whole flow: the *Learn now?* popup with its sound, and on **Learn now** the talent learned popup with its sound. Nothing is actually learned.
 
 **General:**
 - *Learn on level up* and *Ask first*: saved per character
@@ -149,6 +150,7 @@ Everyone with the addon sees the build as a clickable, class-colored **[Auto Sup
 | `/ass view` | open the build you follow in the talent calculator |
 | `/ass settings` | open the settings page |
 | `/ass test` | preview the talent learned popup |
+| `/ass testspec` | preview the Spec now summary popup for your whole active build |
 | `/ass status` | the build you follow, progress and next talent |
 | `/ass list` | the whole order, with learned points in green |
 | `/ass learn` | "Spec now" for the active build |

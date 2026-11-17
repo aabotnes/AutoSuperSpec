@@ -415,7 +415,7 @@ function Toast.TalentsLearned(learned, build, mode)
         Toast.Show({
             icon = last.t.icon, title = mode == "spec" and "Spec complete" or s.title,
             name = build and build.name or last.t.name,
-            sub = ("%d talents learned"):format(#learned),
+            sub = ("%d talents learned%s"):format(#learned, build and build.trees and ("  ·  " .. build.trees) or ""),
             corner = last.level and ("Lvl " .. last.level) or nil, buildId = build and build.id,
         })
         return
@@ -459,6 +459,27 @@ function Toast.Preview()
         Toast.ShowAsk(data, function() Toast.Show(learned) end)
     else
         Toast.Show(data)
+    end
+end
+
+-- Shows the "Spec complete" summary as if Spec now had learned the whole
+-- active build, first point to last (nothing is learned).
+function Toast.PreviewSpecNow()
+    local b = AS.ActiveBuild()
+    local progress = b and b.class == AS.PlayerClass() and AS.Progress(b)
+    local steps = progress and progress.steps
+    if steps and #steps > 0 then
+        local last = steps[#steps]
+        Toast.Show({
+            preview = true, icon = last.icon, title = "Spec complete", name = b.name,
+            sub = ("%d talents learned%s"):format(#steps, b.trees and ("  ·  " .. b.trees) or ""),
+            corner = "Lvl " .. (9 + #steps), buildId = b.id,
+        })
+    else
+        Toast.Show({
+            preview = true, icon = AS.ICON, title = "Spec complete", name = "Example build",
+            sub = "51 talents learned  ·  activate a build to preview it", corner = "Lvl 60",
+        })
     end
 end
 
