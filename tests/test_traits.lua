@@ -402,6 +402,15 @@ check(not C.toggle:IsEnabled() and not C.spec:IsEnabled(), "can't activate a mag
 AS.NewBuild("MAGE")
 check(F.page == "calc" and C.nameBox:GetText() == "New Mage build" and C.trees[2].title:GetText() == "Fire", "new mage build from a warrior")
 -- the empty draft is unchanged, so opening another build does not ask
+-- the footer always shows the build this character follows, whichever class is selected
+AS.SetActive(b.id, true)
+AS.ShowUI("WARRIOR")
+local warriorBar, warriorNext = F.barText:GetText(), F.nextText:GetText()
+AS.ShowUI("MAGE")
+check(F.footTitle:GetText():find("Prot leveling", 1, true) and F.barText:GetText() == warriorBar and F.nextText:GetText() == warriorNext,
+    "footer shows the followed build with the Mage page open: " .. tostring(F.barText:GetText()) .. " / " .. tostring(F.nextText:GetText()))
+AS.SetActive(nil, true)
+
 -- a class with no saved tree stays read-only
 local druid = AS.Import("druid:0aab", "Balance")
 AS.ShowBuild(druid.id)

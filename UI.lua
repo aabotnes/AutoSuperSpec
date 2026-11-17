@@ -724,7 +724,12 @@ function AS.RefreshUI()
     local active = AS.ActiveBuild()
     local progress, err
     if active and active.class == myClass then
-        progress, err = AS.Progress(active, layout, meta)
+        -- always against this character's own tree, whichever class is selected
+        if own then
+            progress, err = AS.Progress(active, layout, meta)
+        else
+            progress, err = AS.Progress(active)
+        end
     end
     ui.resume:SetShown(AS.state.paused and active ~= nil)
     if not active then
