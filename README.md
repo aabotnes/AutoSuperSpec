@@ -87,6 +87,30 @@ The talent data comes straight from the game, so it always matches your client. 
 - **Saved for your whole account:** builds, every class's saved talent tree, and the minimap button position. Every character can see, edit and share every build.
 - **Saved per character:** which build is active, plus **Learn on level up** and **Ask first**. Each character follows its own build.
 
+## Talent learned popup
+
+When a talent is learned on a ding, or when you accept the **Learn** prompt, an achievement-style popup shows the talent's icon and its name in yellow, with the rank, the build name and the level. Several at once stack (up to 3, the rest wait their turn). **Spec now** shows one summary popup instead. Hover a popup to keep it up, left-click it to open the build, right-click to dismiss it.
+
+## Settings
+
+Click **Settings** on the builds page (or type `/ass settings`).
+
+**Talent learned popup** (saved for all your characters):
+- show it or not, and whether "Spec now" gets a summary popup
+- **Style:** Achievement (gold), Arcane (violet), Class color or Minimal
+- **Size**, **Duration** and the **Title text**
+- **Animation:** slide in and flash, or none
+- **Sound:** None, Achievement, Level up, Quest complete, Ready check, Raid warning, or any custom sound ID, with a **Play** button; and the **Sound channel**
+- **In combat:** show the popup *after combat* (default) or *right away*
+- **Position:** **Move popup** lets you drag it anywhere; **Reset** puts it back
+- **Preview popup** shows it for the next talent of the build you follow (`/ass test` does the same)
+
+**General:**
+- *Learn on level up* and *Ask first*: saved per character
+- *Auto-scan talent trees on open*
+- *Show minimap button*
+- *Highlight next talent in the talent window*
+
 ## In the game's talent window
 
 - The next talent of the build you follow gets a pulsing gold frame, with a small *NEXT · Lvl 18 · 1/5* tag above it. It only shows on your own active talents, not while you're viewing someone else's talent link.
@@ -118,6 +142,8 @@ Everyone with the addon sees the build as a clickable, class-colored **[Auto Sup
 |---|---|
 | `/ass` | open or close the window |
 | `/ass view` | open the build you follow in the talent calculator |
+| `/ass settings` | open the settings page |
+| `/ass test` | preview the talent learned popup |
 | `/ass status` | the build you follow, progress and next talent |
 | `/ass list` | the whole order, with learned points in green |
 | `/ass learn` | "Spec now" for the active build |

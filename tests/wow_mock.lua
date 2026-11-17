@@ -31,6 +31,12 @@ function Widget.CreateFontString() return NewWidget() end
 function Widget.CreateTexture() return NewWidget() end
 function Widget.Insert(self, t) self._text = self._text .. t end
 function Widget.GetStringWidth() return 80 end
+function Widget.SetScale(self, s) self._scale = s end
+function Widget.GetScale(self) return self._scale or 1 end
+function Widget.SetPoint(self, ...) self._point = { ... } end
+function Widget.GetPoint(self) if self._point then return unpack(self._point) end end
+function Widget.SetAlpha(self, a) self._alpha = a end
+function Widget.GetAlpha(self) return self._alpha or 1 end
 function Widget.SetDesaturated(self, v) self._desat = v and true or false end
 function Widget.SetColorTexture(self, r, g, b, a) self._color = ("%.2f,%.2f,%.2f,%.2f"):format(r, g, b, a or 1) end
 function Widget.GetHeight() return 300 end
@@ -123,6 +129,8 @@ function IsMouseButtonDown() return false end
 function InCombatLockdown() return M.inCombat or false end
 function GetBuildInfo() return "1.60.1", "70790", "Nov 3 2026", 16001 end
 function UnitLevel() return M.level end
+M.sounds = {}
+function PlaySound(id, channel) M.sounds[#M.sounds + 1] = id .. "@" .. tostring(channel) return true end
 ChatFontNormal = {}
 
 function M.Load(dir, files)

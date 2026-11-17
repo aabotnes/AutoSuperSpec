@@ -115,6 +115,7 @@ function AS.UpdateTalentWindow()
     local tf = TalentsFrame()
     if not overlay or not tf then return end
     local function hide() overlay:Hide() end
+    if AS.db.talentWindowHighlight == false then return hide() end
     if not tf:IsVisible() or not ShowingActiveTalents(tf) then return hide() end
     local nxt = NextPoint()
     if not nxt or not nxt.t.nodeID then return hide() end

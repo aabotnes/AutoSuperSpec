@@ -158,7 +158,7 @@ C_Spell = {
 }
 
 local DIR = arg[1]
-local AS = M.Load(DIR, { "Core.lua", "Talents.lua", "Engine.lua", "UI.lua", "Calculator.lua", "Minimap.lua", "TalentWindow.lua" })
+local AS = M.Load(DIR, { "Core.lua", "Talents.lua", "Engine.lua", "UI.lua", "Calculator.lua", "Minimap.lua", "TalentWindow.lua", "Toast.lua", "Settings.lua" })
 check(AS.Talents.Name() == "traits", "uses the trait backend")
 M.Fire("PLAYER_ENTERING_WORLD")
 M.Advance(6)
@@ -210,6 +210,14 @@ M.Fire("PLAYER_LEVEL_UP", 31)
 M.Fire("TRAIT_TREE_CURRENCY_INFO_UPDATED", 500)
 M.Advance(5)
 check(spentNow() == 22 and commits == 2, "level 31 learns the next point (" .. spentNow() .. ", commits " .. commits .. ")")
+local toasts = AS.Toast.Shown()
+local tp = toasts[#toasts]
+check(tp and tp:IsShown() and tp.name:GetText() == "Concussion Blow" and tp.sub:GetText() == "Rank 2/2  ·  Prot leveling"
+    and tp.corner:GetText() == "Lvl 31" and tp.title:GetText() == "TALENT LEARNED",
+    "ding shows a talent-learned popup: " .. tostring(tp and tp.name:GetText()) .. " / " .. tostring(tp and tp.sub:GetText()))
+check(M.sounds[#M.sounds] == "12891@Master", "popup plays its sound: " .. tostring(M.sounds[#M.sounds]))
+AS.Toast.Update(20)
+check(#AS.Toast.Shown() == 0, "popup fades away after its duration")
 
 -- player has staged changes in the talent window: AutoSpec keeps its hands off
 M.level = 32
@@ -249,6 +257,10 @@ check(M.LastPopup().which == "AUTOSUPERSPEC_APPLY", "spec now asks first")
 M.ClickPopup("AUTOSUPERSPEC_APPLY")
 M.Advance(5)
 check(spentNow() == 50, "spec now fills the free points (" .. spentNow() .. ")")
+tp = AS.Toast.Shown()[#AS.Toast.Shown()]
+check(tp and tp.title:GetText() == "SPEC COMPLETE" and tp.sub:GetText() == "26 talents learned" and tp.name:GetText() == "Prot leveling",
+    "spec now shows one summary popup: " .. tostring(tp and tp.sub:GetText()))
+AS.Toast.Update(20)
 
 -- dinging 60: learns the last point, then stops following the build
 M.level = 60
@@ -505,6 +517,98 @@ check(not ov:IsShown(), "no highlight without an active build")
 F:Hide()
 AutoSuperSpecTalentWindowButton:GetScript("OnClick")(AutoSuperSpecTalentWindowButton)
 check(F:IsShown(), "the button opens Auto Super Spec")
+
+-- popups: settings, combat, preview, queue
+AS.Toast.Update(20) -- let earlier popups (e.g. the level 60 ding) finish
+local TS = AS.Toast.Settings()
+AS.SetActive(b.id, true)
+TS.enabled = false
+AS.Toast.TalentsLearned({ { t = layout[3][2], rank = 1, level = 11 } }, b, "auto")
+check(#AS.Toast.Shown() == 0, "popups can be turned off")
+AS.Toast.Preview()
+check(#AS.Toast.Shown() == 1, "preview still shows when popups are off")
+AS.Toast.Update(20)
+TS.enabled = true
+M.inCombat = true
+AS.Toast.TalentsLearned({ { t = layout[3][2], rank = 1, level = 11 } }, b, "auto")
+check(#AS.Toast.Shown() == 0 and AS.Toast.Waiting() == 1, "in combat: popup waits (After combat)")
+M.inCombat = false
+M.Fire("PLAYER_REGEN_ENABLED")
+M.Advance(1)
+check(#AS.Toast.Shown() == 1, "popup shows once combat ends")
+AS.Toast.Update(20)
+TS.combat = "show"
+M.inCombat = true
+AS.Toast.TalentsLearned({ { t = layout[3][2], rank = 1, level = 11 } }, b, "auto")
+check(#AS.Toast.Shown() == 1, "Right away: popup shows in combat")
+M.inCombat = false
+AS.Toast.Update(20)
+TS.combat = "wait"
+local many = {}
+for i = 1, 2 do many[i] = { t = layout[3][i], rank = 1 } end
+AS.Toast.TalentsLearned(many, b, "auto")
+AS.Toast.TalentsLearned(many, b, "auto")
+check(#AS.Toast.Shown() == 3 and AS.Toast.Waiting() == 1, "at most 3 popups at once, the rest wait their turn")
+AS.Toast.Update(6.5)
+check(#AS.Toast.Shown() == 1, "queued popup shows when room frees up")
+AS.Toast.Update(20)
+
+-- settings page
+AS.ShowPage("settings")
+local SP = F.settingsPage
+check(SP:IsShown() and not F.listPage:IsShown(), "settings page opens in the same window")
+local function findButton(parent, text)
+    for _, fr in ipairs(M.frames) do if fr._text == text and fr._scripts.OnClick then return fr end end
+end
+local before = TS.style
+findButton(SP, ">"):GetScript("OnClick")()
+check(TS.style ~= before, "style can be changed: " .. tostring(TS.style))
+TS.style = "achievement"
+local plusB = findButton(SP, "+")
+plusB:GetScript("OnClick")()
+check(TS.scale == 1.1, "size can be changed: " .. tostring(TS.scale))
+TS.scale = 1
+local playB = findButton(SP, "Play")
+local nSounds = #M.sounds
+playB:GetScript("OnClick")()
+check(#M.sounds == nSounds + 1, "Play previews the sound")
+TS.sound, TS.soundID, TS.channel = "custom", 5555, "SFX"
+playB:GetScript("OnClick")()
+check(M.sounds[#M.sounds] == "5555@SFX", "custom sound ID and channel are used: " .. M.sounds[#M.sounds])
+TS.sound, TS.channel = "none", "Master"
+nSounds = #M.sounds
+findButton(SP, "Preview popup"):GetScript("OnClick")()
+local pv = AS.Toast.Shown()[1]
+local pn = AS.Progress(b).next
+check(pv and pv.name:GetText() == pn.t.name and #M.sounds == nSounds, "Preview popup shows the upcoming talent (no sound when None)")
+AS.Toast.Update(20)
+TS.sound = "achievement"
+-- move the popup
+findButton(SP, "Move popup"):GetScript("OnClick")()
+check(AS.Toast.IsMoving() and AutoSuperSpecToastMover:IsShown(), "Move popup shows a draggable placeholder")
+AutoSuperSpecToastMover:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 300, 500)
+AutoSuperSpecToastMover:GetScript("OnDragStop")(AutoSuperSpecToastMover)
+AutoSuperSpecToastMover:GetScript("OnClick")()
+check(not AS.Toast.IsMoving() and TS.point[1] == "TOPLEFT" and TS.point[3] == 300 and TS.point[4] == 500, "position saved after dragging")
+findButton(SP, "Reset"):GetScript("OnClick")()
+check(TS.point == nil, "position can be reset")
+-- general toggles
+AS.SetMinimapButtonShown(false)
+check(not AutoSuperSpecMinimapButton:IsShown() and not AS.MinimapButtonShown(), "minimap button toggle")
+AS.SetMinimapButtonShown(true)
+AS.db.talentWindowHighlight = false
+AS.UpdateTalentWindow()
+local anyOverlay = false
+for _, fr in ipairs(M.frames) do if rawget(fr, "tag") and fr:IsShown() then anyOverlay = true end end
+check(not anyOverlay, "talent window highlight can be turned off")
+AS.db.talentWindowHighlight = nil
+SlashCmdList.AUTOSUPERSPEC("settings")
+check(F.page == "settings", "/ass settings")
+SlashCmdList.AUTOSUPERSPEC("test")
+check(#AS.Toast.Shown() == 1, "/ass test previews the popup")
+AS.Toast.Update(20)
+AS.ShowUI()
+AS.SetActive(nil, true)
 
 -- minimap button
 local mb = AutoSuperSpecMinimapButton

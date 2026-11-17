@@ -155,7 +155,7 @@ end
 
 AS.UI = {
     CreateWithTemplate = CreateWithTemplate, Text = Text, Panel = Panel, Button = Button,
-    SetClassIcon = SetClassIcon, SetIcon = SetIcon, Font = Font, Input = Input,
+    SetClassIcon = SetClassIcon, SetIcon = SetIcon, Font = Font, Input = Input, Check = Check,
 }
 
 ------------------------------------------------------------------------------
@@ -499,6 +499,8 @@ local function CreateUI()
     ui.listPage:SetAllPoints()
     ui.calcPage = AS.CreateCalculator(ui, top)
     ui.calcPage:Hide()
+    ui.settingsPage = AS.CreateSettingsPage(ui, top)
+    ui.settingsPage:Hide()
     ui.page = "list"
 
     -- sidebar ---------------------------------------------------------------
@@ -581,6 +583,8 @@ local function CreateUI()
         GameTooltip:Show()
     end)
     ui.newBuild:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    ui.settingsButton = Button(main, "Settings", 90, 24, function() AS.ShowPage("settings") end)
+    ui.settingsButton:SetPoint("RIGHT", ui.newBuild, "LEFT", -6, 0)
 
     -- import bar
     local imp = Panel(main, 0.35)
@@ -690,6 +694,9 @@ function AS.RefreshUI()
     if not ui or not ui:IsShown() then return end
     if ui.page == "calc" then
         AS.RefreshCalculator()
+        return
+    elseif ui.page == "settings" then
+        AS.RefreshSettings()
         return
     end
     local myClass = AS.PlayerClass()
@@ -835,6 +842,7 @@ function AS.ShowPage(page)
     ui.page = page
     ui.listPage:SetShown(page == "list")
     ui.calcPage:SetShown(page == "calc")
+    ui.settingsPage:SetShown(page == "settings")
     ui.menu:Hide()
     ui:Show()
     AS.RefreshUI()

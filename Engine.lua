@@ -152,6 +152,12 @@ function AS.TryLearn(manual, opts)
         for i = 1, math.min(n, #progress.remaining) do todo[i] = progress.remaining[i].t end
     end
     if #todo == 0 then return end
+    -- the level each point belongs to in the build (for the popup)
+    local levels = {}
+    for i = 1, #todo do
+        local step = opts.reset and i or (progress.remaining[i] and progress.remaining[i].step)
+        levels[i] = step and (9 + step) or nil
+    end
 
     if AS.char.mode == "ask" and not manual then
         AS.ShowLearnPopup(build, todo)
@@ -161,7 +167,17 @@ function AS.TryLearn(manual, opts)
     state.busy, state.paused = true, false
     T.Learn(todo, opts, function(count, lerr)
         state.busy = false
-        if count > 0 then ReportBatch(todo, count, opts.reset) end
+        if count > 0 then
+            ReportBatch(todo, count, opts.reset)
+            -- popup: one per talent for ding / Learn prompt, one summary for "Spec now"
+            local learned, ranks = {}, {}
+            for i = 1, count do
+                local t = todo[i]
+                ranks[t.key] = (ranks[t.key] or (opts.reset and 0 or t.rank)) + 1
+                learned[i] = { t = t, rank = ranks[t.key], level = levels[i] }
+            end
+            if AS.Toast then AS.Toast.TalentsLearned(learned, build, dingOnly and "auto" or "spec") end
+        end
         if dingOnly then state.dingPoints = math.max(0, state.dingPoints - count) end
         if lerr then
             state.paused = true
@@ -615,6 +631,10 @@ SlashCmdList["AUTOSUPERSPEC"] = function(msg)
         if AS.char.active then AS.SpecNow(AS.char.active) else Print("not following a build.") end
     elseif cmd == "resume" then
         AS.Resume()
+    elseif cmd == "settings" or cmd == "options" or cmd == "config" then
+        AS.ShowPage("settings")
+    elseif cmd == "test" or cmd == "preview" then
+        AS.Toast.Preview()
     elseif cmd == "minimap" then
         AS.ToggleMinimapButton()
     elseif cmd == "view" then
@@ -625,7 +645,7 @@ SlashCmdList["AUTOSUPERSPEC"] = function(msg)
     elseif cmd == "debug" then
         AS.ShowCopyWindow("Auto Super Spec debug - press Ctrl+C to copy", T.DebugText())
     else
-        Print("commands: /ass (window), /ass view, /ass import <link>, /ass status, /ass list, /ass on|off, /ass ask|auto, /ass learn, /ass resume, /ass minimap, /ass scan, /ass debug")
+        Print("commands: /ass (window), /ass settings, /ass test (preview popup), /ass view, /ass import <link>, /ass status, /ass list, /ass on|off, /ass ask|auto, /ass learn, /ass resume, /ass minimap, /ass scan, /ass debug")
     end
 end
 

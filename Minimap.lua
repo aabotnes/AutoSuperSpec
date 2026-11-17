@@ -113,6 +113,15 @@ function AS.RefreshMinimap()
     if btn then btn.dot:SetShown(AS.state.paused and AS.ActiveBuild() ~= nil) end
 end
 
+function AS.MinimapButtonShown()
+    return not Settings().hide
+end
+
+function AS.SetMinimapButtonShown(show)
+    Settings().hide = not show
+    if btn then btn:SetShown(show and true or false) end
+end
+
 function AS.ToggleMinimapButton()
     local s = Settings()
     s.hide = not s.hide
